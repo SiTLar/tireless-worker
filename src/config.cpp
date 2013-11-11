@@ -56,31 +56,14 @@ dlgConfig::dlgConfig( wxWindow* parent, wxXmlNode *oConfig,  const wxString& tit
 	m_flatNotebook1->SetCustomizeOptions( 0 );
 	m_flatNotebook1->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) );
 
-
-	//m_button6 = new wxButton( m_panel1, wxID_ANY, wxT("MyButton"), wxDefaultPosition, wxDefaultSize, 0 );
-	//bSizer16->Add( m_button6, 0, wxALL, 5 );
-
 	setProps.insert(PageData(wxT("Internals"), m_flatNotebook1));
 	pHH = new HandlersHome(m_flatNotebook1);
 	m_flatNotebook1->AddPage( pHH, wxT("Handlers"), true );
 
 
 	setProps.insert(PageData(wxT("Paths"), m_flatNotebook1));
-	//setProps.insert(PageData(wxT("Handlers"), m_flatNotebook1));
 	std::for_each(setProps.begin(),setProps.end(), InsertPG(m_flatNotebook1));
 	mainSizer->Add( m_flatNotebook1, 1, wxEXPAND | wxALL, 5 );
-	/*
-	   wxPanel * p = new wxPanel( m_flatNotebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	   wxBoxSizer* panelSizer = new wxBoxSizer( wxVERTICAL );
-	   wxTextCtrl *pText = new wxTextCtrl( p, wxID_ANY, wxT("Second Book Page 0"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
-	   panelSizer->Add(pText, 1, wxALL|wxEXPAND, 5 );
-	   wxStaticText * pSText = new wxStaticText( p, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
-	   panelSizer->Add(pSText, 1, wxALL|wxEXPAND, 5 );
-	   p->SetSizer( panelSizer );
-	   p->Layout();
-
-*/	
-
 	buttonSizer = new wxStdDialogButtonSizer();
 	buttonSizerOK = new wxButton( this, wxID_OK );
 	buttonSizer->AddButton( buttonSizerOK );
@@ -93,19 +76,6 @@ dlgConfig::dlgConfig( wxWindow* parent, wxXmlNode *oConfig,  const wxString& tit
 	this->Layout();
 
 	this->Centre( wxBOTH );
-
-
-	// Connect Events m_flatNotebook1-> 
-	//	DEFINE_EVENT_TYPE(wxEVT_COMMAND_FLATNOTEBOOK_PAGE_CHANGED)
-	//	int iev = wxEVT_COMMAND_FLATNOTEBOOK_PAGE_CHANGED;
-	//	this->Connect(wxID_ANY, (wxEventType) wxEVT_COMMAND_FLATNOTEBOOK_PAGE_CHANGED, wxFlatNotebookEventHandler( dlgConfig::switchPage ), NULL, this );
-	/*
-	   m_PGM->AddPage(wxT("Paths")); 
-	   m_PGM->AddPage(wxT("Handlers")); 
-	   m_PGM->AddPage(wxT("Internals")); 
-	   m_PGM->SelectPage(0);
-
-*/
 	std::for_each(strIntConf.setHandlerLibs.begin(),strIntConf.setHandlerLibs.end(), GenHandlerPanels(pHH));
 	pHH->placeHPanels();
 	pHH->applyConfig();
@@ -116,21 +86,15 @@ dlgConfig::dlgConfig( wxWindow* parent, wxXmlNode *oConfig,  const wxString& tit
 
 dlgConfig::~dlgConfig()
 {
-	// Disconnect Events
-	//m_flatNotebook1->
-	//Disconnect( wxEVT_COMMAND_FLATNOTEBOOK_PAGE_CHANGED, wxFlatNotebookEventHandler( dlgConfig::switchPage ), NULL, this );
-
+	
 }
 HandlersHome::HandlersHome(wxFlatNotebook*m_flatNotebook1 ): wxPanel( m_flatNotebook1, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), 0 ), pParent (m_flatNotebook1), count(0){
-	//wxPropertyGrid* pgTmp = 
 	m_scrolledWindow2 = new wxScrolledWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL );
 	m_scrolledWindow2->SetScrollRate( 5, 5 );
 	bSizer1 = new wxBoxSizer(wxVERTICAL ); 
 	m_scrolledWindow2->SetSizer(bSizer1);
 	pText = new wxStaticText( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
 	pText->Wrap( -1 );
-	//m_scrolledWindow2->SetSizer(bSizer1 );
-	//m_scrolledWindow2->Layout();
 	sbSizer4 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Description") ), wxVERTICAL );
 	sbSizer4->Add( pText, 1, wxALL|wxEXPAND, 5 );
 	panelSizer = new wxBoxSizer( wxVERTICAL );
@@ -139,8 +103,6 @@ HandlersHome::HandlersHome(wxFlatNotebook*m_flatNotebook1 ): wxPanel( m_flatNote
 	panelSizer->FitInside( this);
 	SetSizer( panelSizer );
 	Layout();
-	//bSizer1->Fit(m_scrolledWindow2);
-
 }
 
 struct LoadHandlersConf: public std::unary_function<std::pair<const wxString, HandlerLibPanel*>, void>{
@@ -181,7 +143,6 @@ void HandlerLibPanel::applyConfig (std::map<wxString,TypeFlag> &mapConf, Handler
 PageData::PageData(const wxString &inName, wxFlatNotebook*m_flatNotebook1 ): sName(inName){
 	pPanel = new wxPanel( m_flatNotebook1, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), 0 );
 	wxBoxSizer* panelSizer = new wxBoxSizer( wxVERTICAL );
-	//wxPropertyGrid* pgTmp = 
 	pPG = new wxPropertyGrid(pPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER);
 	panelSizer->Add( pPG, 3, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
 	wxStaticBoxSizer* sbSizer4 = new wxStaticBoxSizer( new wxStaticBox( pPanel, wxID_ANY, wxT("Description") ), wxVERTICAL );
@@ -197,9 +158,7 @@ PageData::PageData(const wxString &inName, wxFlatNotebook*m_flatNotebook1 ): sNa
 void MyFrame::writeDefaultCfg(wxString &sPath){
 	wxFile fileCfg(sPath, wxFile::write);
 	if(!fileCfg.IsOpened()){
-		//wxConfig *config = new wxConfig(wxT("TirelessWorker"),wxEmptyString,wxEmptyString,wxEmptyString,wxCONFIG_USE_LOCAL_FILE);
 		strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() +wxT("twconfig.xmz") ;
-		//wxASSERT(config->Write(wxT("Config_file"), strIntConf.sCfgFilePath));
 		fileCfg.Open(strIntConf.sCfgFilePath, wxFile::write);
 	}
 	wxFileOutputStream fstream(fileCfg);
@@ -211,22 +170,7 @@ void MyFrame::loadCfg(){
 
 
 	wxXmlDocument xmlProgCfg;
-	//	wxConfig *config = new wxConfig(wxT("TirelessWorker"),wxEmptyString,wxEmptyString,wxEmptyString,wxCONFIG_USE_LOCAL_FILE);
 	strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() +wxT("twconfig.xmz") ;
-	//wxMessageBox(strIntConf.sCfgFilePath);
-	/*
-	   if(!config->Read(wxT("Config_file"),&strIntConf.sCfgFilePath)){
-	   strIntConf.sHomeDir = wxGetHomeDir()+wxFileName::GetPathSeparator()+wxT("TirelessWorker");
-
-	   strIntConf.sCfgFilePath= wxGetHomeDir()+ wxFileName::GetPathSeparator() +wxT("twconfig.xml");
-	   wxMessageBox(wxT("No information on the configuration file location found.\n\n Writing blank configuration file to default location:\n")
-	   +strIntConf.sCfgFilePath , wxT("Configuration Error"),wxICON_EXCLAMATION );
-
-	   if (!wxDir::Exists(strIntConf.sHomeDir))wxMkdir(strIntConf.sHomeDir, 0755);
-	   wxASSERT(config->Write(wxT("Config_file"), strIntConf.sCfgFilePath));
-	   writeDefaultCfg(strIntConf.sCfgFilePath);
-	   }
-	   */
 
 	wxFileInputStream fstream(strIntConf.sCfgFilePath);
 	wxZlibInputStream zstream(fstream);
@@ -298,7 +242,6 @@ void MyFrame::loadCfg(){
 					else if (pcProperty->GetName() == wxT("pos"))  pcProperty->GetValue().ToLong(&iPos);
 					pcProperty = pcProperty->GetNext();
 				}
-				//wxMessageBox(wxString::Format(wxT("id=%d, pos=%u, path="), id, iPos)+str);
 				if(!sName.IsEmpty() && !sPath.IsEmpty() && id){
 					miNewItem = new wxMenuItem( m_menu11, id, sName, sPath, wxITEM_NORMAL );
 					aiDynTasks[ id - mID_USEDTASKS] = miNewItem;
@@ -342,7 +285,6 @@ void MyFrame::processCfg(){
 	wxXmlNode *pcNode;
 	wxXmlNode *cfgNode = oConfig->GetChildren();
 	wxString sVal;
-	//wxMessageBox(strIntConf.sHomeDir);
 	while(cfgNode){
 		cfgNode->SetType(wxXML_ELEMENT_NODE);
 		if(cfgNode->GetName() == wxT("Paths")){
@@ -500,24 +442,12 @@ void MyFrame::onConfig( wxCommandEvent& ){
 	loadHandlers();
 	dlgConfig dlg(this, oConfig);
 	if (dlg.ShowModal() == wxID_CANCEL) return;
-	/*wxPGProperty* pPgPathsRoot = dlg.m_PGM->GetPage( dlg.m_PGM->GetPageByName(wxT("Paths")))->GetRoot();
-	  int iPrItem = pPgPathsRoot->GetChildCount();
-	  wxXmlProperty * pcPrVal; 
-	  while(--iPrItem) {
-	  pcPrVal = static_cast<wxXmlProperty *>(pPgPathsRoot->Item(iPrItem)->GetClientData());
-	  pcPrVal->SetValue( pPgPathsRoot->Item(iPrItem)->GetValueAsString());
-	  }
-	  */
 	delete oConfig;
 	oConfig = dlg.getCfg();
 	std::map<wxString, std::map<wxString,TypeFlag> > mapHandlersToUse;
 	dlg.supplyHandlers(mapHandlersToUse);
 	if (pocessHandlers(mapHandlersToUse))
 		strIntConf.mapHandlersToUse = mapHandlersToUse;
-
-
-
-	//processCfg();
 	saveCfg();
 	loadCfg();
 
@@ -557,8 +487,6 @@ void dlgConfig::supplyHandlers(std::map<wxString, std::map<wxString,TypeFlag> >&
 
 
 void dlgConfig::switchPage( wxFlatNotebookEvent& event){
-	//wxMessageBox(wxString::Format(wxT("index#%i"),event.GetSelection() ) );
-	//m_PGM->SelectPage(event.GetSelection());
 
 }
 
@@ -569,8 +497,6 @@ void dlgConfig::loadConfig(wxXmlNode* pcNode){
 			loadCGrid(setProps.find(PageData(wxT("Paths")))->pPG, pcNode->GetChildren());
 		else if(pcNode->GetName() == wxT("Internals"))
 			loadCGrid(setProps.find(PageData(wxT("Internals")))->pPG, pcNode->GetChildren());
-		//else if(pcNode->GetName() == wxT("Handlers"))
-		//loadHandlers(setProps.find(PageData(wxT("Handlers")))->pPG, pcNode->GetChildren());
 		pcNode = pcNode->GetNext();
 	};
 }
@@ -621,7 +547,6 @@ void dlgConfig::onChkListTog(wxCommandEvent& event){
 	wxCheckListBox* checkList = dynamic_cast<wxCheckListBox*>(event.GetEventObject());
 	if (!checkList)wxMessageBox(wxT("oops"));
 	pHH->setSelHandler(checkList->GetString(event.GetInt()), std::make_pair(event.GetInt(), checkList), event.GetId());
-	//pHH->pText->SetLabel(checkList->GetString(event.GetInt()));
 
 }
 void dlgConfig::onChkListSel(wxCommandEvent& event){
@@ -772,18 +697,5 @@ void HandlersHome::placeHPanels(){
 	std::for_each(mapHPanels.begin(),mapHPanels.end(), AddHandlerLibPanels(bSizer1));
 	bSizer1->FitInside( m_scrolledWindow2 );
 	m_scrolledWindow2->Layout();
-	//Layout();
 }
-/*
-   void MyFrame_1::addPanel( wxCommandEvent& ){
 
-   MyPanel2 * pPanel = new MyPanel2(m_scrolledWindow1);
-   bSizer2->Add(pPanel);
-
-   bSizer2->FitInside(m_scrolledWindow1);
-   m_scrolledWindow1->Layout();
-   Layout();
-
-
-   }
-   */

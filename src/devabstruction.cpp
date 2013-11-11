@@ -4,24 +4,6 @@
 #include "md5.h"
 #include <wx/filename.h>
 
-//extern std::map<wxString,DevDesc*> DevList;
-//extern HandlerBroker aHandlers;
-/*
-inline bool  ThrDevs::itDev(DEVID id, std::vector<DevDesc*>::iterator &itMid){
-	std::vector<DevDesc*>::iterator itB, itE;
-	itB = Devs->begin();
-	itE = Devs->end();
-	itMid = Devs->begin()+id;
-	for(;;){
-		if (id > (**itMid).id) itB = itMid;
-		else if (id == (**itMid).id) break;
-		else if (itB == itE) return false;
-		else itE = itMid;
-		itMid = itB + std::distance(itB,itE)/2;
-	}
-	return true;
-};
-*/
 ThrDevs::ThrDevs(MyThread *id): vecid<DevDesc *>(0), TID(id) {
 	pvLocked = new std::vector<DEVID>;
 };
@@ -31,29 +13,14 @@ ThrDevs::~ThrDevs(){
 	delete pvLocked;
 };
 
-void ThrDevs::addlock(DEVID id){ 
-	//std::vector<DEVID>::iterator it = std::find (pvLocked->begin(), pvLocked->end(), id);
-	//if (it == pvLocked->end()) pvLocked->push_back(id);
+void ThrDevs::addlock(DEVID ){ 
+
 } 
 
-void ThrDevs::remlock(DEVID id){
-	//std::vector<DEVID>::iterator it = std::find (pvLocked->begin(), pvLocked->end(), id);
-	//if (it !=pvLocked->end()) pvLocked->erase(it);					
+void ThrDevs::remlock(DEVID ){
+
 };
-/* 
-struct  unlock_it: std::unary_function<unsigned long, void>{
-	MyThread * TID;
-	ThrDevs * caller;
-	unlock_it(MyThread * inTID, ThrDevs * incaller): TID(inTID), caller(incaller){};
-	inline void operator()( unsigned long &input){
-		DevDesc* dev = caller->item(input);
-		if (dev) dev->access.Unlock(TID);
-	};
-};
-*/
 void ThrDevs::unlockAll(){
-	//std::for_each(pvLocked->begin(), pvLocked->end(), unlock_it(TID, this));
-	//pvLocked->clear();
 };
 
 bool HandlerBroker::connect(MyThread * TID, const wxString& sDevName,const std::string& strDevInit, DEVID *id){
@@ -69,9 +36,7 @@ bool HandlerBroker::connect(MyThread * TID, const wxString& sDevName,const std::
 			pNewDev = itDevH->second->dev;
 		}else{
 			pNewDev = pDevLocker->clone();
-			//pNewDev = devlistIt->second;
 			if (!(pNewDev->connect(strDevInit)))return false;
-			//itDevH = mapDevHandlesInUse.insert( std::pair<wxString , CountedDevHandle*> (sDevInit, new CountedDevHandle(pNewDev)) ).first; 
 			itDevH = mapDevHandlesInUse.insert( std::make_pair( strDevLock, new CountedDevHandle(pNewDev)) ).first; 
 			itDevH->second->dev->itDevH = itDevH;
 		}
@@ -138,34 +103,10 @@ bool HandlerBroker::read(MyThread * TID, DEVID id, wxString* pstr, int count){
 	return rc;
 };
 
-void HandlerBroker::unlock(MyThread * TID, DEVID id){
-	/*	mtxDevTreeEdit.Lock();
-		std::map<MyThread *, ThrDevs*>::iterator it=mapThreadDevsInUse.find(TID); 
-		if (it == mapThreadDevsInUse.end()){
-	//wxMessageBox(sDevInit+wxT("::ERROR"));
-	return ;
-	}
-	mtxDevTreeEdit.Unlock();
-	DevDesc *pDev = it->second->item(id);
-	if(!pDev ) return;
-	pDev->access.Unlock(TID);
-	it->second->remlock(id);
-	*/
+void HandlerBroker::unlock(MyThread * , DEVID ){
 	return ;
 };
-void HandlerBroker::lock(MyThread * TID, DEVID id){
-	/*	mtxDevTreeEdit.Lock();
-		std::map<MyThread *, ThrDevs*>::iterator it=mapThreadDevsInUse.find(TID); 
-		if (it == mapThreadDevsInUse.end()){
-	//wxMessageBox(sDevInit+wxT("::ERROR"));
-	return ;
-	}
-	mtxDevTreeEdit.Unlock();
-	DevDesc *pDev = it->second->item(id);
-	if(!pDev) return ;
-	pDev->access.Lock(TID);
-	it->second->addlock(id);
-	*/
+void HandlerBroker::lock(MyThread * , DEVID ){
 	return ;
 };
 
@@ -179,10 +120,7 @@ bool HandlerBroker::attribute(MyThread * TID, DEVID id, Attr *pA){
 DevDesc * HandlerBroker::getDev(MyThread * TID, DEVID id){
 	wxMutexLocker ml(mtxDevTreeEdit);
 	std::map<MyThread *, ThrDevs*>::iterator it=mapThreadDevsInUse.find(TID); 
-	if (it == mapThreadDevsInUse.end()){
-		//wxMessageBox(sDevInit+wxT("::ERROR"));
-		return 0;
-	}
+	if (it == mapThreadDevsInUse.end()) return 0; 
 	return it->second->item(id);
 };
 
@@ -206,12 +144,9 @@ void HandlerBroker::remove(MyThread * TID){
 			delete pDev;
 		}
 	}
-	mtxDevHandlesTreeEdit.Unlock();
-
-
+	mtxDevHandlesTreeEdit.Unlock(); 
 	delete pthD;
-	mapThreadDevsInUse.erase(it);
-
+	mapThreadDevsInUse.erase(it); 
 	return ;
 }
 CountedDevHandle::~CountedDevHandle(){ /*delete dev; */};
@@ -315,15 +250,12 @@ void smartMtx::unlock(){
 
 
 smartMtx::~smartMtx(){
-	//wxMessageBox(wxT("~smartMtx start"));
 	wxMutexLocker ml(locker);
 	if(fInitiaized)
 		if (!(itMtx->second->dec())){ 
 			mtxTree.erase(itMtx);
 			delete pmtx;
 		}
-
-	//wxMessageBox(wxT("~smartMtx done"));
 };
 /*
    struct  DevGenerator: public std::unary_function<std::pair<wxString, DevInterface*>, void>{

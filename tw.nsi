@@ -7,20 +7,20 @@
 
 # All the other settings can be tweaked by editing the !defines at the top of this script
 !define APPNAME "Tireless Worker"
-!define COMPANYNAME "IREE"
+!define COMPANYNAME "TWInspect"
 !define DESCRIPTION "Experimet automation and data acquisition"
 # These three must be integers
 !define VERSIONMAJOR 0
-!define VERSIONMINOR 3
-!define VERSIONBUILD 0
+!define VERSIONMINOR 8
+!define VERSIONBUILD 2
 # These will be displayed by the "Click here for support information" link in "Add/Remove Programs"
 # It is possible to use "mailto:" links in here to open the email client
 !define HELPURL "http://..." # "Support Information" link
 !define UPDATEURL "http://..." # "Product Updates" link
 !define ABOUTURL "http://..." # "Publisher" link
 # This is the size (in kB) of all the files copied into "Program Files"
-!define INSTALLSIZE 5380
-OutFile "tw-${VERSIONMAJOR}.${VERSIONMINOR}.exe"
+!define INSTALLSIZE 8180
+OutFile "..\tw-${VERSIONMAJOR}.${VERSIONMINOR}.exe"
 #RequestExecutionLevel admin ;Require admin rights on NT6+ (When UAC is turned on)
  
 InstallDir "$PROGRAMFILES\${COMPANYNAME}\${APPNAME}"
@@ -49,16 +49,15 @@ Section "Installer Section"
 #!insertmacro InstallLib DLL       NOTSHARED NOREBOOT_NOTPROTECTED ${wxmsw28u_adv_wat_custom} $INSTDIR\wxmsw28u_adv_wat_custom.dll $INSTDIR
 #!insertmacro InstallLib DLL       NOTSHARED NOREBOOT_NOTPROTECTED ${wxmsw28u_core_wat_custom} $INSTDIR\wxmsw28u_core_wat_custom.dll $INSTDIR
 SetOutPath "$INSTDIR"
-File wx\*.*
-File watcom\*.*
-File main\*.*
+File ..\wx\*.*
+File ..\watcom\*.*
+File ..\wat_mswudll\exe\*.*
 
 SetOutPath "$INSTDIR\handlers"
-File handlers\*.*
+File ..\wat_mswudll\dll\*.*
 
-SetOutPath "$PROFILE"
-File twconfig.xml
-WriteRegStr HKLM "Software\${COMPANYNAME}\${APPNAME}\handlers" "generic" "$INSTDIR\handlers\generic.dll"
+SetOutPath "$APPDATA\tmp"
+#WriteRegStr HKLM "Software\${COMPANYNAME}\${APPNAME}\handlers" "generic" "$INSTDIR\handlers\generic.dll"
 
 createDirectory "$SMPROGRAMS\${COMPANYNAME}"
 	createShortCut "$SMPROGRAMS\${COMPANYNAME}\${APPNAME}.lnk" "$INSTDIR\tirelessworker.exe" "" ""
@@ -105,9 +104,13 @@ Section "un.Uninstaller"
  
 	# Remove files
 	delete $INSTDIR\*.*
+	delete $INSTDIR\handlers\*.*
+	rmDir $INSTDIR\handlers
+	delete $INSTDIR\res\*.*
+	rmDir $INSTDIR\res
 
 	# Always delete uninstaller as the last action
-	#delete $INSTDIR\uninstall.exe
+	delete $INSTDIR\uninstall.exe
  
 	# Try to remove the install directory - this will only happen if it is empty
 	rmDir $INSTDIR

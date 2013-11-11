@@ -144,7 +144,7 @@ bool DevSerial::connect(const std::string& stdstrInit) {
 	wxLogDebug( wxString::Format(wxT("COM stage #%d SetCommState OK"), iStage++));
 	COMMTIMEOUTS timeouts = {0};
 	timeouts.ReadIntervalTimeout = 500; 
-	timeouts.WriteIntervalTimeout = 500; 
+	timeouts.WriteTotalTimeoutConstant = 200; 
 	if(!SetCommTimeouts(handle, &timeouts)) {
 		PurgeComm(handle,  PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR );
 		CloseHandle(handle);	
@@ -326,7 +326,7 @@ static bool DevSerial::setReadTimeout(DevSerial *o, const wxString &str){
 	unsigned long ulTimeout;
 	if (str.ToULong(&ulTimeout)) return false;
 	if(!GetCommTimeouts(o->handle, &timeouts)) return false;
-	timeouts.ReadTotalTimeoutConstant = ulTimeout; 
+	timeouts.ReadIntervalTimeout = ulTimeout; 
 	return SetCommTimeouts(o->handle, &timeouts);
 }
 static bool DevSerial::setWriteTimeout(DevSerial *o, const wxString &str){

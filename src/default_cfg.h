@@ -4,10 +4,10 @@ char pcDefaultCfgFile[] = "\
   <handlers/> \
   <config> \
     <Paths> \
-      <home type=\"Dir\" descr=\"Application home directory\" help=\"The home directory. All other paths are relative to that one. Leave the value empty to use the default.\" value=\"\"/> \
-      <scripts type=\"Dir\" descr=\"Look for task scripts\" help=\"A directory to look for task scripts first. The value is relative to the home derictory.\" value=\"\"/> \
-      <logs type=\"Dir\" descr=\"Store the logs\" help=\"A directory to store logfiles. The value is relative to the home derictory.\" value=\"\"/> \
-      <handlers type=\"Dir\" descr=\"Look for task handler libraries\" help=\"A directory to look for dynamic libraries containing device and logging handlers. The value is relative to the home derictory.\" value=\"\"/> \
+      <home type=\"Dir\" descr=\"Application home directory\" help=\"The home directory. Subdirectories for logs and scripts are created here by default.\" value=\"\"/> \
+      <scripts type=\"Dir\" descr=\"Look for task scripts\" help=\"A directory to look for task scripts first. value=\"\"/> \
+      <logs type=\"Dir\" descr=\"Store the logs\" help=\"A directory to store logfiles.\" value=\"\"/> \
+      <handlers type=\"Dir\" descr=\"Look for task handler libraries\" help=\"A directory to look for dynamic libraries containing device and logging handlers.\" value=\"\"/> \
       <res type=\"Dir\" descr=\"Resources directory\" help=\"Normaly should not be changed. Consult the manual for detales.\" value=\"\"/> \
     </Paths> \
     <Internals> \

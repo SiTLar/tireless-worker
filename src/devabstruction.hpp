@@ -13,12 +13,8 @@ public:
 	DevCont(const DevCont &inp): sem(inp.sem), dev(inp.dev), strInit(inp.strInit),strLock(inp.strLock) {sem->Post();};
 	DevCont(DevDesc* _dev): dev(_dev), sem(new wxSemaphore) { };
 	DevDesc* dev;
-	~DevCont(){ 
-		if (sem->TryWait() ==  wxSEMA_BUSY ) {
-			delete dev;
-			delete sem;
-		}
-	};
+	~DevCont(); 
+	
 	std::string strInit;
 	std::string strLock;
 };

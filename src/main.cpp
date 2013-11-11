@@ -1,4 +1,3 @@
-//#include <wx/textdlg.h>
 #include <wx/regex.h>
 #include <wx/filename.h>
 #include <wx/textfile.h>
@@ -12,7 +11,6 @@
 #include <string>
 #include "md5.h"
 #include "main.h"
-//#include "execreq.h"
 enum{	MAX_DYN_MENU_ITEMS = 4, MAX_TOOLS = 10, TIME_QUANT = 500};
 extern Vciml vciMailingList;
 InternalConfigStuct strIntConf;
@@ -37,7 +35,6 @@ MyFrame::MyFrame( wxWindow* parent ) : elMFrame( parent ),oConfig(0)  {
 	Connect( strIntConf.ulIDTools, strIntConf.ulIDTools+strIntConf.ulMaxTools, wxEVT_COMMAND_TOOL_RCLICKED, wxMenuEventHandler( MyFrame::onToolRClick) );
 	Connect( ID_EDIT_TOOL, wxEVT_COMMAND_MENU_SELECTED, wxMenuEventHandler( MyFrame::onEditTool) );
 	Connect( ID_REMOVE_TOOL, wxEVT_COMMAND_MENU_SELECTED, wxMenuEventHandler( MyFrame::onRemoveTool) );
-	//Connect( ID_EXEC, wxEVT_USER_FIRST , wxMenuEventHandler( MyFrame::onExecReq) );
 	counter = 0;
 	loadHandlers();
 	pocessHandlers(strIntConf.mapHandlersToUse);
@@ -127,7 +124,6 @@ void MyFrame::loadHandlers(){
 							strIntConf.sHandlersDir,
 							HLI,dllDev.Detach()));
 			}else dllDev.Unload();
-			// lstDll.push_back(dllDev.Detach());
 
 		}
 	}while(dirHandlers.GetNext( &sLibName));
@@ -139,13 +135,11 @@ struct  Includer: public std::unary_function<wxString &, void>{
 
 	Includer( wxString &i): iVictim(i){};
 	inline void operator()(const wxString& sIncl){
-		//iVictim << wxT("\r\nbye_bye: EXIT\r\n");
 		MyFrame::LoadScript(sIncl, iVictim);
 	};
 };
 bool MyFrame::LoadScript(const wxString &filename, wxString &sGoodScript){
 	wxTextFile file;
-	//wxString str, filename = strIntConf.sScriptsDir +wxFileName::GetPathSeparator()+ ext_filename;
 	wxString str;
 	std::list<wxString> lIncludes;
 	wxRegEx reRegexdo(wxT("\\mdo\\M"), wxRE_ADVANCED + wxRE_ICASE );
@@ -160,20 +154,15 @@ bool MyFrame::LoadScript(const wxString &filename, wxString &sGoodScript){
 			lIncludes.push_back(reRegexInclude.GetMatch(str, 1));
 			reRegexInclude.ReplaceAll(&str, wxT("/*&*/"));
 		}
-		sGoodScript << str;// << wxT("\r\n");
-		//if (reRegexdo.Matches(str)) sGoodScript << wxT("; if ChkDeath(0) then exit; else nop; \r\n");
+		sGoodScript << str;
 		if (reRegexdo.Matches(str)) sGoodScript << wxT(";call ChkDeath 0; \r\n");
 		else sGoodScript << wxT("\r\n");
 
 	}
 	sGoodScript << str;
-	//reRegexSleep.ReplaceAll(&sGoodScript, wxT(";if ChkDeath(\\3) then exit; else nop;"));
 	reRegexSleep.ReplaceAll(&sGoodScript, wxT(";call ChkDeath \\3;"));
-	//wxMessageBox(sGoodScript );
 	file.Close();
 
-	//wxMessageBox(sGoodScript);
-	//sGoodScript<< wxT("\r\nbye_bye: EXIT\r\n");
 	std::for_each(lIncludes.begin(), lIncludes.end(), Includer(sGoodScript));
 	return true;
 }
@@ -232,7 +221,6 @@ void MyFrame::onDynTask(wxMenuEvent& evt){
 }
 
 bool MyFrame::startTask(wxString str,unsigned long &TID){	
-	//WriteText(wxT("Starting new task\n"));
 	if (!CreateThread(this,str, TID)) return false;
 	if ( vciMailingList[TID]->Run() != wxTHREAD_NO_ERROR ){
 		wxLogError(wxT("Can't start thread!"));
@@ -242,13 +230,10 @@ bool MyFrame::startTask(wxString str,unsigned long &TID){
 }
 
 void MyFrame::onNewCommand(wxCommandEvent& WXUNUSED(evt)){
-	//wxMessageBox(wxGetCwd());
 
 	wxString str = wxFileSelector(wxT("Choose a script file"), strIntConf.sScriptsDir);
 	if ( str.empty() )return;
-	//wxMessageBox(str);
 	wxFileName fnTask(str);
-	//fnTask.MakeRelativeTo(strIntConf.sScriptsDir);
 	str = fnTask.GetFullName();
 	wxString sPath = fnTask.GetFullPath();
 	unsigned long TID;
@@ -276,24 +261,11 @@ void MyFrame::onNewCommand(wxCommandEvent& WXUNUSED(evt)){
 		m_menu11->Prepend(victim);
 
 	}
-	//m_listCtrl1->AddItem(str, counter++ +751);
 
 }
 void MyFrame::onExecReq(wxCommandEvent& evt) {
-//   TWExecReq* pER = reinterpret_cast<TWExecReq*>(evt.GetClientData());
- //  pER->rc = wxExecute(pER->sCommand, wxEXEC_ASYNC, pER->pPrObj);
-  // pER->ready.Post();
 }
-/*
-void MyFrame::onNewFrame(wxCommandEvent& evt) {
-   FrameGen* fG = reinterpret_cast<FrameGen*>(evt.GetClientData());
-   wxFrame *fr = fG->FG();
-   fG->ready.Post();
 
-//new PlotFrame();
-   fr->Show(true);
-}
-*/
 void MyFrame::onNewTool( wxCommandEvent& ){
 	wxString str;
 	dlgCreateTool dlg(this);
@@ -314,12 +286,6 @@ void MyFrame::onToolClick (wxMenuEvent& evt){
 }
 
 void MyFrame::onToolRClick(wxMenuEvent& evt){
-	/*wxPoint point = evt.GetPosition();
-	  if (point.x == -1 && point.y == -1) {
-	  wxSize size = GetSize();
-	  point.x = size.x / 2;
-	  point.y = size.y / 2;
-	  } else point = */
 	wxPoint point = m_toolBar1->ScreenToClient(wxGetMousePosition());
 	wxMenu menu;
 	menu.Append(ID_EDIT_TOOL, wxT("Edit Tool"));
@@ -332,17 +298,9 @@ void MyFrame::onEditTool( wxMenuEvent& ){
 	dlgCreateTool dlg(this);
 	wxBitmap  bmp(broken_xpm);
 	dlg.setFname(m_toolBar1->GetToolShortHelp(idCTool));
-	//wxBitmap * bmp =static_cast<wxBitmap*>(m_toolBar1->GetToolClientData(idCTool));  
-	/*
-	wxVariant* vCImagePath =dynamic_cast<wxVariant*> (m_toolBar1->GetToolClientData(idCTool));  
-	if(vCImagePath ){
-		if(!vCImagePath->GetString().IsEmpty() )bmp.LoadFile(vCImagePath->GetString());
-		delete vCImagePath;
-	}
-	*/
 	dlg.setBitmap(&bmp);
 	if (dlg.ShowModal() != wxID_OK) return;
-	//bmp = new wxBitmap(dlg.getBitmap());
+
 	wxString sPath(dlg.getFname());
 	wxFileName fnTask(sPath);
 	int pos = m_toolBar1->GetToolPos(idCTool);
@@ -350,8 +308,6 @@ void MyFrame::onEditTool( wxMenuEvent& ){
 	m_toolBar1->AddTool( idCTool, fnTask.GetFullName(), dlg.getBitmap(), sPath);
 	m_toolBar1->Realize();
 	m_toolBar1->InsertTool( pos, m_toolBar1->RemoveTool(idCTool));
-	//m_toolBar1->SetToolClientData(idCTool, static_cast<wxObject*>(bmp));
-	//m_toolBar1->SetToolClientData(idCTool,new wxVariant(dlg.sImagePath));
 	m_toolBar1->Realize();
 }
 
@@ -368,7 +324,6 @@ void MyFrame::onThreadMsg(wxCommandEvent& evt){
 	str << wxString::Format(wxT(" (TID#%ld) "), msg->pthSpeaker);//->GetId());
 	str << msg->sName;
 	WriteText(str, wxTextAttr(*wxBLUE));
-	//str.Printf(wxT("TID#%ld "), msg->pthSpeaker->GetCurrentId());
 	switch(msg->action){
 		case ThreadMsg::TEXT_OUT:
 			WriteText(msg->GetStr()+wxT("\n"));
@@ -409,17 +364,8 @@ void MyFrame::evhTerminateThread( wxCommandEvent& WXUNUSED(event) ) {
 	long victim = m_listCtrl1->GetSelected();
 	if (victim != -1){
 		MyThread *pThr = vciMailingList[m_listCtrl1->GetItemData(victim)];
-		//m_listCtrl1->DeleteI(victim);	
-
-		if(pThr){
-			/*
-			   wxMutexLocker ml(pThr->mtxEvent);
-			   pThr->ulEventState |= MyThread::DIE;
-			   pThr->semEvent.Post();
-			   */
-
-			pThr->Delete();
-		}
+		if(pThr) pThr->Delete();
+		
 
 	}
 
@@ -472,14 +418,11 @@ void dlgCreateTool::onBrowseFile( wxCommandEvent& ){
 	wxString str = wxFileSelector(wxT("Choose a file for the Tool"), strIntConf.sScriptsDir);
 	if ( str.empty() )return;
 	wxFileName fnTask(str);
-	//fnTask.MakeRelativeTo(strIntConf.sScriptsDir);
 	str = fnTask.GetFullPath();
-	//str = fnTask.GetPath()+ fnTask.GetFullName();
 	m_textCtrl1->SetValue(str);
 }
 
 void dlgCreateTool::onAddIcon( wxCommandEvent& ){
-	//wxString str = wxFileSelector(wxT("Choose a file for the Tool icon"), strIntConf.sHomeDir);
 	sImagePath = wxFileSelector(wxT("Choose a file for the Tool icon"), strIntConf.sResDir.IsEmpty()? strIntConf.sHomeDir:strIntConf.sResDir+ wxFileName::GetPathSeparator()+wxT("icons"));
 	if ( sImagePath.empty() )return;
 	wxImage img(sImagePath );
