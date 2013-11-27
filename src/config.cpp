@@ -162,7 +162,8 @@ void MyFrame::writeDefaultCfg(wxString &sPath){
 		fileCfg.Open(strIntConf.sCfgFilePath, wxFile::write);
 	}
 	wxFileOutputStream fstream(fileCfg);
-	wxZlibOutputStream(fstream).Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
+	//wxZlibOutputStream(fstream).Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
+	fstream.Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
 };
 
 void MyFrame::loadCfg(){
@@ -173,16 +174,17 @@ void MyFrame::loadCfg(){
 	strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() +wxT("twconfig.xmz") ;
 
 	wxFileInputStream fstream(strIntConf.sCfgFilePath);
-	wxZlibInputStream zstream(fstream);
-	if(wxFileName::FileExists(strIntConf.sCfgFilePath)) xmlProgCfg.Load(zstream);
+	//wxZlibInputStream zstream(fstream);
+	if(wxFileName::FileExists(strIntConf.sCfgFilePath)) xmlProgCfg.Load(fstream);
 	if(!xmlProgCfg.IsOk()){
 		wxMessageBox(wxT("Configuration file is corrupted.\n\n Writing blanck configuration file:\n")
 				+strIntConf.sCfgFilePath , wxT("Configuration Error"),wxICON_EXCLAMATION );
 		writeDefaultCfg(strIntConf.sCfgFilePath);
-		wxFileInputStream fstrem(strIntConf.sCfgFilePath);
-		wxZlibInputStream zstream(fstream);
-		xmlProgCfg.Load(zstream);
+		wxFileInputStream fdefstream(strIntConf.sCfgFilePath);
+		//wxZlibInputStream zdefstream(fdefstream);
+		xmlProgCfg.Load(fdefstream);
 	}
+	//xmlProgCfg.SetFileEncoding(wxT("utf8"));
 	wxXmlNode *pcNode = xmlProgCfg.GetRoot()->GetChildren();
 	while(pcNode){
 		if(pcNode->GetName() == wxT("config")){
@@ -322,9 +324,9 @@ void MyFrame::processCfg(){
 				}else if(pcNode->GetName() == wxT("res")){
 					strIntConf.sResDir = pcNode->GetPropVal(wxT("value"), wxEmptyString);
 					if (strIntConf.sResDir.IsEmpty()){ 
-						strIntConf.sHandlersDir =  wxStandardPaths::Get().GetResourcesDir() +wxFileName::GetPathSeparator() + wxT("res");
+						strIntConf.sResDir =  wxStandardPaths::Get().GetResourcesDir() +wxFileName::GetPathSeparator() + wxT("res");
 						pcNode->DeleteProperty(wxT("value"));
-						pcNode->AddProperty(wxT("value"),strIntConf.sHandlersDir);
+						pcNode->AddProperty(wxT("value"),strIntConf.sResDir );
 					}
 				}
 				pcNode = pcNode->GetNext();
@@ -391,7 +393,6 @@ struct SaveHandlerLibToXml : public std::unary_function<std::pair<const wxString
 void MyFrame::saveCfg(){
 	wxXmlDocument xmlCfg;
 	wxString strImage;
-	xmlCfg.SetFileEncoding(wxT("utf8"));
 	wxXmlNode* nodeRoot = new wxXmlNode(wxXML_ELEMENT_NODE, wxT("root"));
 	wxXmlNode* node;
 
@@ -432,8 +433,9 @@ void MyFrame::saveCfg(){
 	std::for_each(strIntConf.mapHandlersToUse.begin(), strIntConf.mapHandlersToUse.end(), SaveHandlerLibToXml(nodeHandlers));
 
 	xmlCfg.SetRoot(nodeRoot);
-	wxFileOutputStream fstream(strIntConf.sCfgFilePath);
-	wxZlibOutputStream zstream(fstream);
+	//wxFileOutputStream fstream(strIntConf.sCfgFilePath);
+	//wxZlibOutputStream zstream(fstream);
+	wxFileOutputStream zstream(strIntConf.sCfgFilePath);
 	xmlCfg.Save(zstream);
 
 }
@@ -463,7 +465,6 @@ struct GenConf : public std::unary_function<PageData&, void>{
 			wxPGProperty * pgP = pgIt.GetProperty();
 			wxXmlNode* node = new wxXmlNode(rootNode, wxXML_ELEMENT_NODE, pgP->GetName());
 			node->AddProperty(new wxXmlProperty(wxT("type"), PD.pPG->GetPropertyShortClassName(pgP->GetId())));
-			wxLogMessage(pgP->GetValueAsString());
 			node->AddProperty(new wxXmlProperty(wxT("value"),pgP->GetValueAsString()));
 			node->AddProperty(new wxXmlProperty(wxT("descr"),pgP->GetLabel()));
 			node->AddProperty(new wxXmlProperty(wxT("help"),pgP->GetHelpString()));

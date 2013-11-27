@@ -63,7 +63,7 @@ EXTRALIBS_FOR_BASE =
 __DEBUGINFO_0 =
 !ifeq BUILD debug
 !ifeq DEBUG_INFO default
-__DEBUGINFO_0 = -d2i
+__DEBUGINFO_0 = -d2
 !endif
 !endif
 !ifeq BUILD release
