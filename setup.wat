@@ -180,7 +180,7 @@ __CAIRO_LIB_p = cairo.lib
 !endif
 ____CAIRO_LIBDIR_FILENAMES_p =
 !ifeq USE_CAIRO 1
-____CAIRO_LIBDIR_FILENAMES_p = libpath $(CAIRO_ROOT)\lib
+____CAIRO_LIBDIR_FILENAMES_p = libpath $(CAIRO_ROOT)/lib
 !endif
 __WXUNIV_DEFINE_p =
 !ifeq WXUNIV 1
@@ -222,7 +222,7 @@ __GFXCTX_DEFINE_p = -dwxUSE_GRAPHICS_CONTEXT=1
 !endif
 ____CAIRO_INCLUDEDIR_FILENAMES =
 !ifeq USE_CAIRO 1
-____CAIRO_INCLUDEDIR_FILENAMES = -i=$(CAIRO_ROOT)\include\cairo
+____CAIRO_INCLUDEDIR_FILENAMES = -i=$(CAIRO_ROOT)/include/cairo
 !endif
 __DLLFLAG_p =
 !ifeq SHARED 1
@@ -234,14 +234,14 @@ __DLLFLAG_p = -dWXUSINGDLL
 WX_RELEASE_NODOT = 28
 
 #$(__WXLIB_CORE_p)  $(__WXLIB_BASE_p) $(__WXLIB_ADV_p) $(__WXLIB_XML_p) $(__WXLIB_MONO_p)   $(__LIB_TIFF_p) $(__LIB_JPEG_p) $(__LIB_PNG_p)  wxzlib$(WXDEBUGFLAG).lib  wxregex$(WXUNICODEFLAG)$(WXDEBUGFLAG).lib wxexpat$(WXDEBUGFLAG).lib $(EXTRALIBS_FOR_BASE)  $(__GDIPLUS_LIB_p) $(__CAIRO_LIB_p) kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib odbc32.lib
-LIBDIRNAME = $(WXDIR)\lib\wat_$(LIBTYPE_SUFFIX)$(CFG)
+LIBDIRNAME = $(WXDIR)/lib/wat_$(LIBTYPE_SUFFIX)$(CFG)
 SETUPHDIR = &
-	$(LIBDIRNAME)\$(PORTNAME)$(WXUNIVNAME)$(WXUNICODEFLAG)$(WXDEBUGFLAG)
+	$(LIBDIRNAME)/$(PORTNAME)$(WXUNIVNAME)$(WXUNICODEFLAG)$(WXDEBUGFLAG)
 MAIN_CXXFLAGS = $(__DEBUGINFO_0) $(__OPTIMIZEFLAG_2) $(__THREADSFLAG_5) &
 	$(__RUNTIME_LIBS_6) -d__WXMSW__ $(__WXUNIV_DEFINE_p) $(__DEBUG_DEFINE_p) &
 	$(__NDEBUG_DEFINE_p) $(__EXCEPTIONS_DEFINE_p) $(__RTTI_DEFINE_p) &
 	$(__THREAD_DEFINE_p) $(__UNICODE_DEFINE_p) $(__GFXCTX_DEFINE_p) &
-	-i=$(SETUPHDIR) -i=$(SRC_DIR) -i=$(WXDIR)\include $(____CAIRO_INCLUDEDIR_FILENAMES) -wx &
-	-wcd=549 -wcd=656 -wcd=657 -wcd=667 -wcd=433 -i=. $(__DLLFLAG_p) -i=$(WXDIR)\samples &
+	-i=$(SETUPHDIR) -i=$(SRC_DIR) -i=$(WXDIR)/include $(____CAIRO_INCLUDEDIR_FILENAMES) -wx &
+	-wcd=549 -wcd=656 -wcd=657 -wcd=667 -wcd=433 -i=. $(__DLLFLAG_p) -i=$(WXDIR)/samples &
 	-dNOPCH -dWIN32 -dWXUSINGDLL -i=$(EXTRAINC) -i=include -i=$(SRC_DIR)/include -i=..
 DLL_CXXFLAGS = -bd $(MAIN_CXXFLAGS)
