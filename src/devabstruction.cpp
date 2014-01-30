@@ -67,7 +67,7 @@ void HandlerBroker::disconnect(MyThread * TID, DEVID id){
 		wxMutexLocker ml(mtxDevHandlesTreeEdit);
 		if (!--(*(pDev->itDevH->second))){
 			pDev->disconnect();
-			delete pDev->itDevH->second;
+		//	delete pDev->itDevH->second;
 			mapDevHandlesInUse.erase(pDev->itDevH);
 			delete pDev;
 		}
@@ -139,7 +139,7 @@ void HandlerBroker::remove(MyThread * TID){
 		pDev = ddIt->second;
 		if (!--(*(pDev->itDevH->second))){
 			pDev->disconnect();
-			delete pDev->itDevH->second;
+		//	delete pDev->itDevH->second;
 			mapDevHandlesInUse.erase(pDev->itDevH);
 			delete pDev;
 		}

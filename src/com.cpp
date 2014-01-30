@@ -22,9 +22,9 @@ extern "C"{
 std::string DevSerial::makeLock(const std::string& stdstrInit) const{
 	
 	wxString strInit(stdstrInit.c_str(), wxConvUTF8);
-	wxRegEx reOptions(wxT("SERIAL::(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
+	wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
 	if (!reOptions.Matches(strInit)) return std::string("BAD_INIT");
-	return std::string( (wxString(wxT("SERIAL::")) + reOptions.GetMatch(strInit, 1)).mb_str());
+	return std::string(  reOptions.GetMatch(strInit, 1).mb_str());
 };
 
 bool DevSerial::connect(const std::string& stdstrInit) {
@@ -38,7 +38,7 @@ bool DevSerial::connect(const std::string& stdstrInit) {
 	//wxString sFname = strInit.Mid(6);
 
 	wxLogDebug( wxT("COM stage #%d starting com"), iStage++);//0
-	wxRegEx reOptions(wxT("SERIAL::(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
+	wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
 	if (!reOptions.Matches(strInit)) return false;
 	wxLogDebug( wxString::Format(wxT("COM stage #%d"), iStage++));
 	handle = CreateFile(wxString(wxT("\\\\.\\")+reOptions.GetMatch(strInit, 1)).wc_str() , GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );

@@ -79,6 +79,7 @@ class DevFile: public DevInterface{
 
 std::map<std::string, unsigned long> DevFile::mapFileAttr;
 DevFile::DevFile():DevInterface(){
+	handle = 0;
 	mapFileAttr[std::string("SEEK_SET")] = SEEK_SET;
 	mapFileAttr[std::string("SEEK_CUR")] = SEEK_CUR ;
 	mapFileAttr[std::string("SEEK_END")] = SEEK_END;

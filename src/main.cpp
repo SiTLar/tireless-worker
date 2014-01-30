@@ -241,7 +241,7 @@ void MyFrame::onNewCommand(wxCommandEvent& WXUNUSED(evt)){
 	wxMenuItemList::iterator itMenuItem = m_menu11->GetMenuItems().begin();
 	wxMenuItemList::iterator itMenuEnd = m_menu11->GetMenuItems().end();
 	for(;itMenuItem != itMenuEnd;++itMenuItem )
-		if((*itMenuItem)->GetHelp() == str ) break;
+		if((*itMenuItem)->GetHelp() == sPath) break;
 	wxMenuItem *miNewItem;
 	if(itMenuItem == itMenuEnd) {	
 		int items = m_menu11->GetMenuItemCount();
