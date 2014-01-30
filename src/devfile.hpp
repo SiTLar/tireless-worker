@@ -33,10 +33,11 @@ class DevFile: public DevInterface{
 //	virtual bool connect(const std::string& strInit) {
 //		std::string strFname = strInit.substr(6);
 	virtual bool connect(const std::string& strFname ) {
-		handle = std::fopen(strFname.c_str(), "a");	
-		handle = std::freopen(strFname.c_str() , "r+", handle);	
+		handle = std::fopen(strFname.c_str(), "r+");	
+		if(!handle) return false;
+	//	handle = std::freopen(strFname.c_str() , "r+", handle);	
 		std::fseek(handle, 0, SEEK_END);
-		return (handle  !=  0 )?true:false;
+		return true;
 	};
 
 	virtual bool attribute(Attr* pAttrStr){
@@ -58,7 +59,7 @@ class DevFile: public DevInterface{
 	};
 
 	virtual bool write(const std::string& str){
-		 bool rc = std::fputs(str.c_str(), handle ) !=  EOF?true:false;
+		 bool rc = std::fwrite(str.c_str(), str.length(), 1, handle ) !=  EOF?true:false;
 		 std::fflush(handle);
 		 return rc;
 	};  
