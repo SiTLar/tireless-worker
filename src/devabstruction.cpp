@@ -219,7 +219,7 @@ struct  AHDevChk: public std::unary_function<std::pair<wxString const, DevDesc *
 	inline void operator()(std::pair<wxString const, DevDesc *>&inp){
 		std::map<wxString, DevCont>::iterator it(devConts.find(inp.first));
 		if (it == devConts.end()) return;
-		if (inp.second->makeLock(it->second.strInit) != it->second.strLock) bOK = false;
+		if (!it->second.strLock.empty()) if (inp.second->makeLock(it->second.strInit) != it->second.strLock) bOK = false;
 	};
 
 };
