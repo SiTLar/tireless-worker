@@ -13,7 +13,6 @@ extern "C"{
 #include "interface.h"
 #include "com.hpp"
 extern "C"{
-
 #include <errno.h>
 #include <fcntl.h>
 #include <windows.h>
@@ -37,7 +36,7 @@ bool DevSerial::connect(const std::string& stdstrInit) {
 	BYTE cByteSize = 8, cParity = NOPARITY, cStopBits = ONESTOPBIT;
 	//wxString sFname = strInit.Mid(6);
 
-	wxLogDebug( wxT("COM stage #%d starting com"), iStage++);//0
+	wxLogDebug( wxT("COM stage #%d starting com. strInit=%s"), iStage++,strInit );//0
 	wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
 	if (!reOptions.Matches(strInit)) return false;
 	wxLogDebug( wxString::Format(wxT("COM stage #%d"), iStage++));
@@ -81,7 +80,7 @@ bool DevSerial::connect(const std::string& stdstrInit) {
 		else if (!(sMode.Mid(1,1).CmpNoCase(wxT("n")))) cParity = NOPARITY;
 		else return false;
 		wxLogDebug( wxString::Format(wxT("COM stage #%d Parity OK"), iStage++));
-		if(sMode.SubString(2,1) == wxT("2")) cStopBits = TWOSTOPBITS;
+		if(sMode.Mid(2,1) == wxT("2")) cStopBits = TWOSTOPBITS;
 		else cStopBits = ONESTOPBIT;
 		if (!reOptions.GetMatch(strInit, 4).IsEmpty()){
 
@@ -143,7 +142,10 @@ bool DevSerial::connect(const std::string& stdstrInit) {
 
 	wxLogDebug( wxString::Format(wxT("COM stage #%d SetCommState OK"), iStage++));
 	COMMTIMEOUTS timeouts = {0};
-	timeouts.ReadIntervalTimeout = 500; 
+
+	timeouts.ReadIntervalTimeout = ULONG_MAX; 
+	//timeouts.ReadTotalTimeoutMultiplier = 500; 
+	timeouts.ReadTotalTimeoutConstant = 2000;
 	timeouts.WriteTotalTimeoutConstant = 200; 
 	if(!SetCommTimeouts(handle, &timeouts)) {
 		PurgeComm(handle,  PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR );
@@ -151,6 +153,8 @@ bool DevSerial::connect(const std::string& stdstrInit) {
 		return false;
 	};
 	wxLogDebug( wxString::Format(wxT("COM stage #%d TimeOUT OK"), iStage++));
+	GetCommTimeouts(handle, &timeouts);
+	wxLogDebug( wxString::Format(wxT("COM stage #%d GetCommTimeouts OK. RI=%d, WT=%d"), iStage++, timeouts.ReadIntervalTimeout, timeouts.WriteTotalTimeoutConstant ));
 	return true;
 }
 bool DevSerial::attribute(Attr* pAttrStr){
@@ -169,12 +173,11 @@ bool DevSerial::attribute(Attr* pAttrStr){
 
 };
 
-bool DevSerial::write(const std::string& strInit){
+bool DevSerial::write(const std::string& str){
 	//int iState;
-	wxString str(strInit.c_str(), wxConvUTF8);
 	DWORD lBytsWritten;
-	bool rc = WriteFile(handle, str.utf8_str(), str.Len(), &lBytsWritten, NULL) ;
-	rc = (rc && WriteFile(handle, sTerm.utf8_str(), sTerm.Len(), &lBytsWritten, NULL));
+	bool rc = WriteFile(handle, str.c_str(), str.length(), &lBytsWritten, NULL) ;
+	if(!sTerm.IsEmpty()) rc = (rc && WriteFile(handle, sTerm.utf8_str(), sTerm.Len(), &lBytsWritten, NULL));
 	return rc;
 };  
 
@@ -189,7 +192,8 @@ bool DevSerial::read(std::string*str, int count) {
 	wxLogDebug( wxT("COM preread re=%d; iReadCount=%d; count=%d; char=%x;"), re, iReadCount,  count,  buf[iReadCount]);
 	while (ReadFile( handle, buf + iReadCount++, 1, &re, NULL )){
 		wxLogDebug( wxT("COM read re=%d; iReadCount=%d; count=%d; char=%x;"), re, iReadCount,  count,  buf[iReadCount-1]);
-		if((re == 0 )|| (count-- == 0)) break;
+		if((re == 0 )|| (count-- == 0)) 
+			break;
 		if(iReadCount >= iTermLen )if (!memcmp(pcTerm, buf + iReadCount - iTermLen, iTermLen)){
 			buf[iReadCount - iTermLen ] = '\0';
 			break;
@@ -309,6 +313,12 @@ static bool DevSerial::setStopBits( DevSerial *o,const wxString& sInput){
 	return true ;
 
 };
+static bool DevSerial::setNoTerm(DevSerial *o, const wxString &str){
+	o->sTerm = wxEmptyString;
+	setOTerm(o, wxEmptyString);
+	return true;
+
+};
 static bool DevSerial::setTerm(DevSerial *o, const wxString &str){
 	o->sTerm = str;
 	setOTerm(o, str);
@@ -326,7 +336,7 @@ static bool DevSerial::setReadTimeout(DevSerial *o, const wxString &str){
 	unsigned long ulTimeout;
 	if (str.ToULong(&ulTimeout)) return false;
 	if(!GetCommTimeouts(o->handle, &timeouts)) return false;
-	timeouts.ReadIntervalTimeout = ulTimeout; 
+	timeouts.ReadTotalTimeoutConstant = ulTimeout; 
 	return SetCommTimeouts(o->handle, &timeouts);
 }
 static bool DevSerial::setWriteTimeout(DevSerial *o, const wxString &str){
@@ -345,6 +355,7 @@ DevSerial::DevSerial(): DevInterface(), handle(INVALID_HANDLE_VALUE){
 	mapAttr[wxString(wxT("PARITY"))] =  &setParity;
 	mapAttr[wxString(wxT("DATA_BITS"))] =  &setDataBits;
 	mapAttr[wxString(wxT("TERMINATOR"))] =  &setTerm;
+	mapAttr[wxString(wxT("NO_TERMINATOR"))] =  &setNoTerm;
 	mapAttr[wxString(wxT("OUT_TERMINATOR"))] =  &setOTerm;
 	mapAttr[wxString(wxT("WRITE_TIMEOUT"))] =  &setWriteTimeout;
 	mapAttr[wxString(wxT("READ_TIMEOUT"))] =  &setReadTimeout;

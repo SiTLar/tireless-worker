@@ -1,4 +1,5 @@
-WXDIR = C:/wxWidgets-2.8.12
+#WXDIR = C:/wxWidgets-2.8.12
+WXDIR = /home/sitlar/wxMSW-2.8.12
 SRC_DIR = src 
 OBJS = &
 	../wat_$(PORTNAME)$(WXUNIVNAME)$(WXUNICODEFLAG)$(WXDEBUGFLAG)$(WXDLLFLAG)$(CFG)
