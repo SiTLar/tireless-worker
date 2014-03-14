@@ -22,6 +22,7 @@ class DevSerial: public DevInterface{
 	static bool setDataBits ( DevSerial*, const wxString&);
 	static bool setTerm ( DevSerial*, const wxString&);
 	static bool setOTerm ( DevSerial*, const wxString&);
+	static bool setNoTerm ( DevSerial*, const wxString&);
 	static bool setWriteTimeout( DevSerial*, const wxString&);
 	static bool setReadTimeout( DevSerial*, const wxString&);
 	long canonizeBaud(wxString ); 

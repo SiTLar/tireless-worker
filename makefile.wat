@@ -1,5 +1,8 @@
 #WXDIR = C:/wxWidgets-2.8.12
 WXDIR = /home/sitlar/wxMSW-2.8.12
+!ifdef %WXDIR
+WXDIR = $(%WXDIR)
+!endif
 SRC_DIR = src 
 OBJS = &
 	../wat_$(PORTNAME)$(WXUNIVNAME)$(WXUNICODEFLAG)$(WXDEBUGFLAG)$(WXDLLFLAG)$(CFG)
@@ -47,7 +50,7 @@ $(OBJS) :
 
 ### Targets: ###
 test : .SYMBOLIC
-	echo $(MAIN_OBJECTS)
+	echo $(%WXDIR)
 
 all : .SYMBOLIC $(OBJS)/exe/tirelessworker.exe  $(OBJS)/exe/logplot.exe $(OBJS)/dll/generic.dll $(OBJS)/dll/extended.dll
 

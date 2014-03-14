@@ -213,8 +213,8 @@ class HandlerBroker{
 	void remove(MyThread * );
 	bool attribute(MyThread * , DEVID, Attr*);
 	bool write(MyThread * , DEVID, const std::string&);
-	bool read(MyThread * , DEVID, wxString*, int );
-	bool writeread(MyThread *, DEVID , const std::string&,  wxString*, int );
+	bool read(MyThread * , DEVID, std::string*, int );
+	bool request(MyThread *, DEVID , const std::string&,   std::string*, int );
 	void sortMail();
 	void clear();
 	void setAvailHandlers(std::map<wxString, DevDesc*>&, std::map<wxString, LogDesc*>&);

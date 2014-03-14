@@ -204,7 +204,7 @@ APIRET APIENTRY rfDevRead( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_TYPE
 	ULONG devid = 0;
 	ULONG count = 1024;
 	//char errmsg[] = "ERROR";
-	wxString inbuf;
+	std::string strInbuf;
 	//char cOut[20] = {0};
 	//RXSTRING ret = {0,0};
 	RexxQueryExit("sayHandler", NULL, &query_flag, glData.user_info);
@@ -214,14 +214,21 @@ APIRET APIENTRY rfDevRead( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_TYPE
 		wxString::FromUTF8(argv[1].strptr, argv[1].strlength).ToULong(&count);
 //		wxMessageBox(wxString::Format(wxT("count=%d"), count));
 	
-	if(!fGetHBroker()->read(glData.pthr, devid, &inbuf, count )) inbuf = wxString(wxT("ERROR"));
+	if(!fGetHBroker()->read(glData.pthr, devid, &strInbuf, count )) strInbuf= "ERROR";
 	wxLogDebug( wxT("DevRead: error waiting for a semaphore"));
 	wxLogDebug( wxT("DevRead: reader thread killed"));
 	//wxMessageBox(inbuf);
 	//wxMessageBox(wxString::Format(wxT("buflen=%d"), strlen(inbuf.mb_str(wxConvUTF8))));
-	char* buf = (char *)malloc(strlen(inbuf.mb_str(wxConvUTF8))+1);
-	strcpy(buf, inbuf.mb_str(wxConvUTF8));
-	return RxReturnStringAndFree( NULL, retstr, buf, 1); 
+	
+	if ( strInbuf.length() > RXAUTOBUFLEN ){
+		char* ret = (char *)RexxAllocateMemory( strInbuf.length() + 1 );
+		if (!ret) return -1;
+		retstr->strptr = (RXSTRING_STRPTR_TYPE)ret;
+	}
+	memcpy( retstr->strptr, strInbuf.data(), strInbuf.length() );
+	retstr->strlength = strInbuf.length();
+	return 0;
+//	return RxReturnStringAndFree( NULL, retstr, buf, 1); 
 	//return RxReturnNumber(NULL, retstr, rc);
 
 }
@@ -265,7 +272,7 @@ APIRET APIENTRY rfDevRequest( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_T
 	ULONG devid = 0;
 	ULONG count = 1024;
 	//char errmsg[] = "ERROR";
-	wxString inbuf;
+	std::string strInbuf;
 	//char cOut[20] = {0};
 	//RXSTRING ret = {0,0};
 	RexxQueryExit("sayHandler", NULL, &query_flag, glData.user_info);
@@ -276,12 +283,17 @@ APIRET APIENTRY rfDevRequest( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_T
 		wxString::FromUTF8(argv[2].strptr, argv[2].strlength).ToULong(&count);
 //		wxMessageBox(wxString::Format(wxT("count=%d"), count));
 	
-	if(!fGetHBroker()->writeread(glData.pthr, devid, wrbuf, &inbuf, count )) inbuf = wxString(wxT("ERROR"));
+	if(!fGetHBroker()->request(glData.pthr, devid, wrbuf, &strInbuf, count ))  strInbuf= "ERROR";
 	//wxMessageBox(inbuf);
 	//wxMessageBox(wxString::Format(wxT("buflen=%d"), strlen(inbuf.mb_str(wxConvUTF8))));
-	char* buf = (char *)malloc(strlen(inbuf.mb_str(wxConvUTF8))+1);
-	strcpy(buf, inbuf.mb_str(wxConvUTF8));
-	return RxReturnStringAndFree( NULL, retstr, buf, 1); 
+	if ( strInbuf.length() > RXAUTOBUFLEN ){
+		char* ret = (char *)RexxAllocateMemory( strInbuf.length() + 1 );
+		if (!ret) return -1;
+		retstr->strptr = (RXSTRING_STRPTR_TYPE)ret;
+	}
+	memcpy( retstr->strptr, strInbuf.data(), strInbuf.length() );
+	retstr->strlength = strInbuf.length();
+	return 0;
 	//return RxReturnNumber(NULL, retstr, rc);
 
 }

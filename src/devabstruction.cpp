@@ -81,25 +81,21 @@ bool HandlerBroker::write(MyThread * TID, DEVID id, const std::string& str){
 	wxMutexLocker ml(pDev->locker);
 	return pDev->write(str);
 };
-bool HandlerBroker::writeread(MyThread * TID, DEVID id, const std::string& str, wxString* pstr, int count){
+bool HandlerBroker::request(MyThread * TID, DEVID id, const std::string& str, std::string* pstr, int count){
 
 	DevDesc * pDev= getDev(TID, id);
 	if(!pDev ) return false;
 	wxMutexLocker ml(pDev->locker);
 	bool rc = pDev->write(str);
-	std::string strTemp;
-	rc &= pDev->read(&strTemp, count);
-	*pstr = wxString(strTemp.c_str(), wxConvUTF8);
+	rc &= pDev->read(pstr, count);
 	return rc;
 };
-bool HandlerBroker::read(MyThread * TID, DEVID id, wxString* pstr, int count){
+bool HandlerBroker::read(MyThread * TID, DEVID id, std::string* pstr, int count){
 
 	DevDesc * pDev= getDev(TID, id);
 	if(!pDev ) return false;
 	wxMutexLocker mlDev(pDev->locker);
-	std::string strTemp;
-	bool rc = pDev->read(&strTemp, count);
-	*pstr = wxString(strTemp.c_str(), wxConvUTF8);
+	bool rc = pDev->read(pstr, count);
 	return rc;
 };
 

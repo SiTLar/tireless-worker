@@ -33,9 +33,9 @@ class DevFile: public DevInterface{
 //	virtual bool connect(const std::string& strInit) {
 //		std::string strFname = strInit.substr(6);
 	virtual bool connect(const std::string& strFname ) {
-		handle = std::fopen(strFname.c_str(), "r+");	
+		handle = std::fopen(strFname.c_str(), "a");	
 		if(!handle) return false;
-	//	handle = std::freopen(strFname.c_str() , "r+", handle);	
+		handle = std::freopen(strFname.c_str() , "r+", handle);	
 		std::fseek(handle, 0, SEEK_END);
 		return true;
 	};

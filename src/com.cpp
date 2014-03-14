@@ -313,7 +313,7 @@ static bool DevSerial::setStopBits( DevSerial *o,const wxString& sInput){
 	return true ;
 
 };
-static bool DevSerial::setNoTerm(DevSerial *o, const wxString &str){
+static bool DevSerial::setNoTerm(DevSerial *o, const wxString &){
 	o->sTerm = wxEmptyString;
 	setOTerm(o, wxEmptyString);
 	return true;
