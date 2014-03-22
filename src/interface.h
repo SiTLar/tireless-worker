@@ -14,7 +14,8 @@ class DevInterface {
 	virtual ~DevInterface(){};
 	virtual DevInterface* clone() = 0;
 	virtual bool connect(const std::string& ) = 0;
-	virtual std::string makeLock(const std::string& ) const = 0;
+	virtual std::string makeBusLock(const std::string& ) const = 0;
+	virtual std::string makeUniqueDev(const std::string& ) const = 0;
 	virtual void disconnect() = 0;
 	virtual bool attribute(Attr*) = 0;
 	virtual bool write(const std::string&) = 0;  

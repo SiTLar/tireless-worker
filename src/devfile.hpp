@@ -27,7 +27,10 @@ class DevFile: public DevInterface{
 		handle = NULL;
 	};
 
-	virtual std::string makeLock(const std::string& strInit) const {
+	virtual std::string makeUniqueDev(const std::string& strInit) const {
+		return strInit;
+	};
+	virtual std::string makeBusLock(const std::string& strInit) const {
 		return strInit;
 	};
 //	virtual bool connect(const std::string& strInit) {

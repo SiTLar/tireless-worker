@@ -41,6 +41,7 @@ class DevSerial: public DevInterface{
 	virtual bool attribute(Attr* pAttrStr); 
 	virtual bool write(const std::string& str);  
 	virtual bool read(std::string*str, int count) ;
-	virtual std::string makeLock(const std::string& strInit) const;
+	virtual std::string makeBusLock(const std::string& strInit) const;
+	virtual std::string makeUniqueDev(const std::string& strInit) const ;
 
 };

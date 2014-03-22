@@ -38,7 +38,8 @@ class DevTTY: public DevInterface{
 
 	public:
 	virtual DevInterface* clone(){return new DevTTY(*this);};
-	virtual std::string makeLock(const std::string& strInit) const;
+	virtual std::string makeBusLock(const std::string& strInit) const;
+	virtual std::string makeUniqueDev(const std::string& strInit) const ;
 	virtual void disconnect();
 
 	virtual bool connect(const std::string& strInit) ; 

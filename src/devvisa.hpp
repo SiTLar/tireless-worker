@@ -16,7 +16,8 @@ class DevVisa: public DevInterface{
 	virtual DevInterface* clone(){return new DevVisa(*this);};
 	virtual void disconnect() { viClose(handle);};
 
-	virtual std::string makeLock(const std::string& strInit) const ;
+	virtual std::string makeUniqueDev(const std::string& strInit) const ;
+	virtual std::string makeBusLock(const std::string& strInit) const ;
 	virtual bool connect(const std::string& strInit) ;
 	
 	virtual bool attribute(Attr* pAttrStr);

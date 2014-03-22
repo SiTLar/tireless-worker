@@ -27,8 +27,15 @@ bool DevVisa::connect(const std::string& strInit) {
 	return ( res ==  VI_SUCCESS )?true:false;
 };
 
-std::string DevVisa::makeLock(const std::string& strInit) const {
-	size_t uiInitPos = strInit.find(':');
+std::string DevVisa::makeUniqueDev(const std::string& strInit) const {
+	size_t uiInitPos = strInit.find("::");
+	uiInitPos = strInit.find("::", uiInitPos );
+	if (uiInitPos == std::string::npos) return std::string("BAD_INIT");
+
+	return strInit.substr(0, uiInitPos );
+}
+std::string DevVisa::makeBusLock(const std::string& strInit) const {
+	size_t uiInitPos = strInit.find("::");
 	if (uiInitPos == std::string::npos) return std::string("BAD_INIT");
 
 	return strInit.substr(0, uiInitPos );

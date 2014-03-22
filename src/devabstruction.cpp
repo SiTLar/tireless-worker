@@ -28,16 +28,23 @@ bool HandlerBroker::connect(MyThread * TID, const wxString& sDevName,const std::
 	DevDesc * pNewDev; 
 	DevDesc* pDevLocker = getDev(sDevName);
 	if (!pDevLocker) return false;
-	std::string strDevLock = std::string(sDevName.utf8_str())+ pDevLocker->makeLock(strDevInit);
+	std::string strUniqueDev = std::string(sDevName.utf8_str())+ pDevLocker->makeUniqueDev(strDevInit);
 	{
 		wxMutexLocker ml1(mtxDevHandlesTreeEdit);
-		std::map<std::string, CountedDevHandle*>::iterator itDevH = mapDevHandlesInUse.find(strDevLock);
+		std::map<std::string, CountedDevHandle*>::iterator itDevH = mapDevHandlesInUse.find(strUniqueDev);
 		if(itDevH != mapDevHandlesInUse.end()){
 			pNewDev = itDevH->second->dev;
 		}else{
 			pNewDev = pDevLocker->clone();
 			if (!(pNewDev->connect(strDevInit)))return false;
-			itDevH = mapDevHandlesInUse.insert( std::make_pair( strDevLock, new CountedDevHandle(pNewDev)) ).first; 
+
+			wxMutexLocker ml2(mtxBusLockTreeEdit);
+			std::string strBusLock= pNewDev->makeBusLock(strDevInit);
+			pNewDev->itBusLocker =  mapBusLockers.find(strBusLock);
+			if(pNewDev->itBusLocker == mapBusLockers.end())
+				pNewDev->itBusLocker = mapBusLockers.insert(std::make_pair(strBusLock, new mtxCont)).first;
+			++(*(pNewDev->itBusLocker->second));
+			itDevH = mapDevHandlesInUse.insert( std::make_pair( strUniqueDev, new CountedDevHandle(pNewDev)) ).first; 
 			itDevH->second->dev->itDevH = itDevH;
 		}
 		++(*(itDevH->second));
@@ -67,6 +74,8 @@ void HandlerBroker::disconnect(MyThread * TID, DEVID id){
 		wxMutexLocker ml(mtxDevHandlesTreeEdit);
 		if (!--(*(pDev->itDevH->second))){
 			pDev->disconnect();
+			if(!--(*(pDev->itBusLocker->second)))
+				mapBusLockers.erase(pDev->itBusLocker);				
 		//	delete pDev->itDevH->second;
 			mapDevHandlesInUse.erase(pDev->itDevH);
 			delete pDev;
@@ -74,18 +83,47 @@ void HandlerBroker::disconnect(MyThread * TID, DEVID id){
 	}
 	return ;
 };
+void HandlerBroker::remove(MyThread * TID){
+
+	wxMutexLocker ml(mtxDevTreeEdit);
+	wxMutexLocker ml2(mtxBusLockTreeEdit);
+	std::map<MyThread *, ThrDevs*>::iterator it = mapThreadDevsInUse.find(TID);
+	if (it == mapThreadDevsInUse.end()){return ;}
+	ThrDevs * pthD = it->second;
+	mtxDevHandlesTreeEdit.Lock();
+	ThrDevs::iterator ddIt;
+	ThrDevs::iterator itLast= pthD->end();
+	DevDesc * pDev;
+	for(ddIt = pthD->begin(); ddIt != itLast; ++ddIt){
+		pDev = ddIt->second;
+		if (!--(*(pDev->itDevH->second))){
+			pDev->disconnect();
+			if(!--(*(pDev->itBusLocker->second)))
+				mapBusLockers.erase(pDev->itBusLocker);				
+		//	delete pDev->itDevH->second;
+			mapDevHandlesInUse.erase(pDev->itDevH);
+			delete pDev;
+		}
+	}
+	mtxDevHandlesTreeEdit.Unlock(); 
+	delete pthD;
+	mapThreadDevsInUse.erase(it); 
+	return ;
+}
 bool HandlerBroker::write(MyThread * TID, DEVID id, const std::string& str){
 
 	DevDesc * pDev= getDev(TID, id);
 	if(!pDev ) return false;
-	wxMutexLocker ml(pDev->locker);
+	//wxMutexLocker ml(pDev->locker);
+	wxMutexLocker ml(*(pDev->itBusLocker->second->pmtx));
 	return pDev->write(str);
 };
 bool HandlerBroker::request(MyThread * TID, DEVID id, const std::string& str, std::string* pstr, int count){
 
 	DevDesc * pDev= getDev(TID, id);
 	if(!pDev ) return false;
-	wxMutexLocker ml(pDev->locker);
+	wxMutexLocker ml(*(pDev->itBusLocker->second->pmtx));
+	//wxMutexLocker ml(pDev->locker);
 	bool rc = pDev->write(str);
 	rc &= pDev->read(pstr, count);
 	return rc;
@@ -94,7 +132,8 @@ bool HandlerBroker::read(MyThread * TID, DEVID id, std::string* pstr, int count)
 
 	DevDesc * pDev= getDev(TID, id);
 	if(!pDev ) return false;
-	wxMutexLocker mlDev(pDev->locker);
+	wxMutexLocker ml(*(pDev->itBusLocker->second->pmtx));
+	//wxMutexLocker mlDev(pDev->locker);
 	bool rc = pDev->read(pstr, count);
 	return rc;
 };
@@ -109,7 +148,8 @@ void HandlerBroker::lock(MyThread * , DEVID ){
 bool HandlerBroker::attribute(MyThread * TID, DEVID id, Attr *pA){
 	DevDesc * pDev = getDev(TID, id);
 	if(!pDev) return false;
-	wxMutexLocker ml(pDev->locker);
+	wxMutexLocker ml(*(pDev->itBusLocker->second->pmtx));
+	//wxMutexLocker ml(pDev->locker);
 	return pDev->attribute(pA);
 };
 
@@ -121,30 +161,6 @@ DevDesc * HandlerBroker::getDev(MyThread * TID, DEVID id){
 };
 
 
-void HandlerBroker::remove(MyThread * TID){
-
-	wxMutexLocker ml(mtxDevTreeEdit);
-	std::map<MyThread *, ThrDevs*>::iterator it = mapThreadDevsInUse.find(TID);
-	if (it == mapThreadDevsInUse.end()){return ;}
-	ThrDevs * pthD = it->second;
-	mtxDevHandlesTreeEdit.Lock();
-	ThrDevs::iterator ddIt;
-	ThrDevs::iterator itLast= pthD->end();
-	DevDesc * pDev;
-	for(ddIt = pthD->begin(); ddIt != itLast; ++ddIt){
-		pDev = ddIt->second;
-		if (!--(*(pDev->itDevH->second))){
-			pDev->disconnect();
-		//	delete pDev->itDevH->second;
-			mapDevHandlesInUse.erase(pDev->itDevH);
-			delete pDev;
-		}
-	}
-	mtxDevHandlesTreeEdit.Unlock(); 
-	delete pthD;
-	mapThreadDevsInUse.erase(it); 
-	return ;
-}
 CountedDevHandle::~CountedDevHandle(){ /*delete dev; */};
 bool CountedDevHandle::operator--(){
 	if(--count) return true;
@@ -168,20 +184,22 @@ DevCont::~DevCont(){
 
 LogDesc::LogDesc(Logger *inpL, HandlerLibData*inpHLD): HandlerDesc(inpHLD), l(inpL->clone()){};
 DevDesc::DevDesc(DevInterface *inpD, HandlerLibData*inpHLD):
-	HandlerDesc(inpHLD),d(inpD->clone()), semFreeMutexes(new wxSemaphore),
-	locker( *(new wxMutex)) {
+	HandlerDesc(inpHLD),d(inpD->clone())//, semFreeMutexes(new wxSemaphore),
+	//locker( *(new wxMutex)) 
+	{
 	};
 DevDesc::~DevDesc(){ 
-	delete d;
+	delete d;/*
 	if (semFreeMutexes->TryWait() ==  wxSEMA_BUSY ){
 		delete &locker;
 		delete semFreeMutexes;
 	}
+	*/
 };
 
 bool DevDesc::connect(const std::string&inp ) {
 
-	wxMutexLocker ml(locker);
+//	wxMutexLocker ml(locker);
 	return d->connect(inp);
 
 };
@@ -215,7 +233,7 @@ struct  AHDevChk: public std::unary_function<std::pair<wxString const, DevDesc *
 	inline void operator()(std::pair<wxString const, DevDesc *>&inp){
 		std::map<wxString, DevCont>::iterator it(devConts.find(inp.first));
 		if (it == devConts.end()) return;
-		if (!it->second.strLock.empty()) if (inp.second->makeLock(it->second.strInit) != it->second.strLock) bOK = false;
+		if (!it->second.strLock.empty()) if (inp.second->makeBusLock(it->second.strInit) != it->second.strLock) bOK = false;
 	};
 
 };
