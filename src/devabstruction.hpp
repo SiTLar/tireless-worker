@@ -117,32 +117,34 @@ class HandlerDesc{
 class DevDesc: public HandlerDesc{
 	//unsigned long ulHandle;
 	friend struct HGenStuff;
-	wxSemaphore *semFreeMutexes;
+	//wxSemaphore *semFreeMutexes;
 	DevInterface * const  d;
 	DevDesc(DevInterface * ,HandlerLibData*);
 	protected:
 
-	DevDesc(DevDesc&P):HandlerDesc(P.pHLD),  d(P.d->clone()), locker(P.locker), semFreeMutexes(P.semFreeMutexes),
+	DevDesc(DevDesc&P):HandlerDesc(P.pHLD),  d(P.d->clone()), /*locker(P.locker), semFreeMutexes(P.semFreeMutexes),*/
 		itDevH(P.itDevH), id(P.id) {
-		semFreeMutexes->Post();
+		//semFreeMutexes->Post();
 	};
 	//static MBUSMUTEXES pmtxTree;
 
 	public:
 	virtual DevDesc * clone(){return new DevDesc(*this);}; 
-	wxMutex &locker;
+	//wxMutex &locker;
 	//DevLocker access;
 	std::map<std::string, CountedDevHandle*>::iterator itDevH ;
+	std::map<std::string, mtxCont*>::iterator itBusLocker;
 	unsigned long id;
 	virtual ~DevDesc();
 	//DevDesc * clone() = 0;
 	inline bool attribute(Attr* inp) { return d->attribute(inp);};
 	inline bool connect(const std::string&);
 	inline void disconnect() { 
-		wxMutexLocker ml(locker);
+		//wxMutexLocker ml(locker);
 		return d->disconnect();
 	};
-	inline std::string makeLock(const std::string& inp) {return d->makeLock(inp);};
+	inline std::string makeBusLock(const std::string& inp) {return d->makeBusLock(inp);};
+	inline std::string makeUniqueDev(const std::string& inp) {return d->makeUniqueDev(inp);};
 	inline bool write(const std::string&inp) { return d->write(inp);};
 	inline bool read(std::string* inp, int num) { return d->read(inp, num);};
 	inline bool operator<(/*DevDesc* lhs,*/ DevDesc* rhs){
@@ -197,7 +199,10 @@ class HandlerBroker{
 	friend  HandlerBroker* fGetHBroker();
 	std::map<MyThread *, ThrDevs*> mapThreadDevsInUse;
 	std::map<std::string, CountedDevHandle*> mapDevHandlesInUse;
+	std::map<std::string, mtxCont*> mapBusLockers;
+
 	wxMutex  mtxDevHandlesTreeEdit;
+	wxMutex  mtxBusLockTreeEdit;
 	wxMutex  mtxDevTreeEdit;
 
 	wxMutex mtxAH;

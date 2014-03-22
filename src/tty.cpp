@@ -11,7 +11,10 @@ extern "C"{
 #include <sstream>
 #include "interface.h"
 #include "tty.hpp"
-std::string DevTTY::makeLock(const std::string& strInit) const{
+std::string DevTTY::makeUniqueDev(const std::string& strInit) const {
+	return makeBusLock(strInit);
+}
+std::string DevTTY::makeBusLock(const std::string& strInit) const{
 
 	wxString sInit(strInit.c_str(), wxConvUTF8);
 	wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|HW|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );

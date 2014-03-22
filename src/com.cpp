@@ -18,7 +18,10 @@ extern "C"{
 #include <windows.h>
 #include <commctrl.h>
 }
-std::string DevSerial::makeLock(const std::string& stdstrInit) const{
+std::string DevSerial::makeUniqueDev(const std::string& strInit) const {
+	return makeBusLock(strInit);
+}
+std::string DevSerial::makeBusLock(const std::string& stdstrInit) const{
 	
 	wxString strInit(stdstrInit.c_str(), wxConvUTF8);
 	wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
