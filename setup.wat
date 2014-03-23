@@ -242,6 +242,6 @@ MAIN_CXXFLAGS = $(__DEBUGINFO_0) $(__OPTIMIZEFLAG_2) $(__THREADSFLAG_5) &
 	$(__NDEBUG_DEFINE_p) $(__EXCEPTIONS_DEFINE_p) $(__RTTI_DEFINE_p) &
 	$(__THREAD_DEFINE_p) $(__UNICODE_DEFINE_p) $(__GFXCTX_DEFINE_p) &
 	-i="$(SETUPHDIR)" -i="$(SRC_DIR)" -i="$(WXDIR)/include" $(____CAIRO_INCLUDEDIR_FILENAMES) -wx &
-	-wcd=549 -wcd=656 -wcd=657 -wcd=667 -wcd=433 -i=. $(__DLLFLAG_p) -i=$(WXDIR)/samples &
+	-wcd=549 -wcd=656 -wcd=657 -wcd=667 -wcd=433 -i=. $(__DLLFLAG_p) -i="$(WXDIR)/samples" &
 	-dNOPCH -dWIN32 -dWXUSINGDLL -i="$(EXTRAINC)" -i=include -i="$(SRC_DIR)/include" -i=..
 DLL_CXXFLAGS = -bd $(MAIN_CXXFLAGS)

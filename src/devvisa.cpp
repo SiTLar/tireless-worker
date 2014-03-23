@@ -18,7 +18,7 @@ bool DevVisa::connect(const std::string& strInit) {
 	size_t uiInitPos = strInit.find(':');
 	if (uiInitPos == std::string::npos) return false;
 	size_t uiHandleLength = strInit.length();
-	char *buf = new char[uiHandleLength];
+	char *buf = new char[uiHandleLength+1];
 	strInit.copy(buf,uiHandleLength ,0 );
 	buf[uiHandleLength ] = '\0';
 	int res = viOpen(defaultRM, buf, VI_NULL, VI_NULL, &handle);
@@ -28,11 +28,8 @@ bool DevVisa::connect(const std::string& strInit) {
 };
 
 std::string DevVisa::makeUniqueDev(const std::string& strInit) const {
-	size_t uiInitPos = strInit.find("::");
-	uiInitPos = strInit.find("::", uiInitPos );
-	if (uiInitPos == std::string::npos) return std::string("BAD_INIT");
 
-	return strInit.substr(0, uiInitPos );
+	return strInit;
 }
 std::string DevVisa::makeBusLock(const std::string& strInit) const {
 	size_t uiInitPos = strInit.find("::");
