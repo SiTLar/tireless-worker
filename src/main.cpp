@@ -140,7 +140,8 @@ struct  Includer: public std::unary_function<wxString &, void>{
 };
 bool MyFrame::LoadScript(const wxString &filename, wxString &sGoodScript){
 	wxTextFile file;
-	wxString str;
+	wxFileName fname(filename);
+	wxString str, sPath = fname.GetPath();
 	std::list<wxString> lIncludes;
 	wxRegEx reRegexdo(wxT("\\mdo\\M"), wxRE_ADVANCED + wxRE_ICASE );
 	wxRegEx reRegexInclude(wxT("#include \"(.+?)\""), wxRE_ADVANCED + wxRE_ICASE );
@@ -151,7 +152,7 @@ bool MyFrame::LoadScript(const wxString &filename, wxString &sGoodScript){
 	};
 	for ( str = file.GetFirstLine(); !file.Eof(); str = file.GetNextLine() ) {
 		if (reRegexInclude.Matches(str)) {
-			lIncludes.push_back(reRegexInclude.GetMatch(str, 1));
+			lIncludes.push_back(sPath+ wxFileName::GetPathSeparators()+reRegexInclude.GetMatch(str, 1));
 			reRegexInclude.ReplaceAll(&str, wxT("/*&*/"));
 		}
 		sGoodScript << str;
