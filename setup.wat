@@ -61,8 +61,10 @@ EXTRALIBS_FOR_BASE =
 EXTRALIBS_FOR_BASE =  
 !endif
 __DEBUGINFO_0 =
+DEBUG_CFG = 
 !ifeq BUILD debug
 !ifeq DEBUG_INFO default
+DEBUG_CFG = _debug
 __DEBUGINFO_0 = -d2
 !endif
 !endif

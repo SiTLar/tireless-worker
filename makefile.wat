@@ -23,6 +23,7 @@ MAIN_OBJECTS =  &
 	$(OBJS)/config.obj &
 	$(OBJS)/rxpack.obj &
 	$(OBJS)/mathfunc.obj &
+	$(OBJS)/build_config$(DEBUG_CFG).obj &
 	$(OBJS)/handlerpanel.obj 
 
 

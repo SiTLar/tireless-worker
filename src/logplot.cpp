@@ -115,9 +115,11 @@ bool LogPlot::init(const std::string &str) {
 };
 int LogPlot::write(const std::string& strData ){
 	double x, y;
-	wxString sData(strData.c_str(), wxConvUTF8);
+	/*wxString sData(strData.c_str(), wxConvUTF8);
 	if (!(sData.BeforeFirst(':').ToDouble(&x) &
 				sData.AfterFirst(':').ToDouble(&y))) return false;
+*/
+	if (sscanf(strData.c_str(), "%le:%le", &x, &y) != 2)return false;
 	LPAddPoint data;
 	data.cCommand = 'W';
 	data.ulTID = myTID;

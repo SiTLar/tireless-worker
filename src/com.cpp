@@ -195,17 +195,14 @@ bool DevSerial::read(std::string*str, int count) {
 	wxLogDebug( wxT("COM preread re=%d; iReadCount=%d; count=%d; char=%x;"), re, iReadCount,  count,  buf[iReadCount]);
 	while (ReadFile( handle, buf + iReadCount++, 1, &re, NULL )){
 		wxLogDebug( wxT("COM read re=%d; iReadCount=%d; count=%d; char=%x;"), re, iReadCount,  count,  buf[iReadCount-1]);
-		if((re == 0 )|| (count-- == 0)) 
-			break;
-		if(iReadCount >= iTermLen )if (!memcmp(pcTerm, buf + iReadCount - iTermLen, iTermLen)){
-			buf[iReadCount - iTermLen ] = '\0';
-			break;
-		}
+		if((re == 0 )|| (count-- == 0)) break;
+		if(iReadCount >= iTermLen )if (!memcmp(pcTerm, buf + iReadCount - iTermLen, iTermLen)) break;
+		
 	}
 	//fprintf(stderr, "iReadCount=%d, count=%d\n", iReadCount, count );
 	//for(int idx = 0;idx< iReadCount; idx++) if(buf[idx])fprintf(stderr, "%2x",buf[idx]);
 
-	*str = std::string(buf, iReadCount);
+	*str = std::string(buf, iReadCount - iTermLen);
 	return true;
 };
 inline long DevSerial::canonizeBaud(wxString s){

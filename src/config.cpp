@@ -26,6 +26,7 @@
 
 extern InternalConfigStuct strIntConf;
 extern unsigned long ulTimeQuant;
+extern char pczConfigName[]; 
 
 struct InsertPG : public std::unary_function<PageData&, void>{
 	wxFlatNotebook *pNB;
@@ -158,12 +159,12 @@ PageData::PageData(const wxString &inName, wxFlatNotebook*m_flatNotebook1 ): sNa
 void MyFrame::writeDefaultCfg(wxString &sPath){
 	wxFile fileCfg(sPath, wxFile::write);
 	if(!fileCfg.IsOpened()){
-		strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() +wxT("twconfig.xmz") ;
+		strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() + /*wxT("twconfig.xmz")*/ +wxString(pczConfigName, wxConvUTF8) ;
 		fileCfg.Open(strIntConf.sCfgFilePath, wxFile::write);
 	}
 	wxFileOutputStream fstream(fileCfg);
-	//wxZlibOutputStream(fstream).Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
-	fstream.Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
+	wxZlibOutputStream(fstream).Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
+	//fstream.Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
 };
 
 void MyFrame::loadCfg(){
@@ -171,18 +172,18 @@ void MyFrame::loadCfg(){
 
 
 	wxXmlDocument xmlProgCfg;
-	strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() +wxT("twconfig.xmz") ;
+	strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() /*+wxT("twconfig.xmz")*/+wxString(pczConfigName, wxConvUTF8)  ;
 
 	wxFileInputStream fstream(strIntConf.sCfgFilePath);
-	//wxZlibInputStream zstream(fstream);
-	if(wxFileName::FileExists(strIntConf.sCfgFilePath)) xmlProgCfg.Load(fstream);
+	wxZlibInputStream zstream(fstream);
+	if(wxFileName::FileExists(strIntConf.sCfgFilePath)) xmlProgCfg.Load(zstream);
 	if(!xmlProgCfg.IsOk()){
 		wxMessageBox(wxT("Configuration file is corrupted.\n\n Writing blanck configuration file:\n")
 				+strIntConf.sCfgFilePath , wxT("Configuration Error"),wxICON_EXCLAMATION );
 		writeDefaultCfg(strIntConf.sCfgFilePath);
 		wxFileInputStream fdefstream(strIntConf.sCfgFilePath);
-		//wxZlibInputStream zdefstream(fdefstream);
-		xmlProgCfg.Load(fdefstream);
+		wxZlibInputStream zdefstream(fdefstream);
+		xmlProgCfg.Load(zdefstream);
 	}
 	//xmlProgCfg.SetFileEncoding(wxT("utf8"));
 	wxXmlNode *pcNode = xmlProgCfg.GetRoot()->GetChildren();
@@ -433,9 +434,9 @@ void MyFrame::saveCfg(){
 	std::for_each(strIntConf.mapHandlersToUse.begin(), strIntConf.mapHandlersToUse.end(), SaveHandlerLibToXml(nodeHandlers));
 
 	xmlCfg.SetRoot(nodeRoot);
-	//wxFileOutputStream fstream(strIntConf.sCfgFilePath);
-	//wxZlibOutputStream zstream(fstream);
-	wxFileOutputStream zstream(strIntConf.sCfgFilePath);
+	wxFileOutputStream fstream(strIntConf.sCfgFilePath);
+	wxZlibOutputStream zstream(fstream);
+	//wxFileOutputStream zstream(strIntConf.sCfgFilePath);
 	xmlCfg.Save(zstream);
 
 }

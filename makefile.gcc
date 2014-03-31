@@ -10,6 +10,7 @@ ifdef DEBUG
 WXDBG = yes
 CCDBG = -g
 DIR_SUF = _d
+DEBUG_CFG = _debug
 else
 WXDBG = no
 CCDBG = -O2
@@ -29,6 +30,7 @@ MAIN_OBJECTS =  \
 	$(OBJS)/rxpack.o \
 	$(OBJS)/mathfunc.o \
 	$(OBJS)/mycontrolls.o \
+	$(OBJS)/build_config$(DEBUG_CFG).o \
 	$(OBJS)/config.o 
 
 NI_OBJECTS = \
