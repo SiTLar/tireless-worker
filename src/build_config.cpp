@@ -1,0 +1,1 @@
+char pczConfigName[] = "twconfig.xmz"; 
