@@ -1,3 +1,4 @@
+#include <wx/wx.h>
 #include <wx/string.h>
 #include <wx/regex.h>
 #include <wx/log.h>
@@ -18,40 +19,45 @@ extern "C"{
 #include <windows.h>
 #include <commctrl.h>
 }
+#include "tools.hpp"
 std::string DevSerial::makeUniqueDev(const std::string& strInit) const {
 	return makeBusLock(strInit);
 }
-std::string DevSerial::makeBusLock(const std::string& stdstrInit) const{
-	
-	wxString strInit(stdstrInit.c_str(), wxConvUTF8);
-	wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
-	if (!reOptions.Matches(strInit)) return std::string("BAD_INIT");
-	return std::string(  reOptions.GetMatch(strInit, 1).mb_str());
+std::string DevSerial::makeBusLock(const std::string& strInit) const{
+	std::string strRet;
+	std::vector< std::string> vParam ;
+	if (splitString(strInit, ':', vParam))strRet = vParam[0];
+	else strRet = "BAD_INIT";
+	return strRet;
 };
 
-bool DevSerial::connect(const std::string& stdstrInit) {
+bool DevSerial::connect(const std::string& strInit) {
 	DCB dcb;
 	int iStage = 0;
-	wxString strInit(stdstrInit.c_str(), wxConvUTF8);
+	
 	memset(&dcb, 0, sizeof(dcb));
 	long lBaud = CBR_9600;
 	DWORD fRtsControl = RTS_CONTROL_DISABLE, fDtrControl = DTR_CONTROL_DISABLE, fOutxCtsFlow = false, fOutxDsrFlow = false, fOutX = false, fInX = false;
 	BYTE cByteSize = 8, cParity = NOPARITY, cStopBits = ONESTOPBIT;
 	//wxString sFname = strInit.Mid(6);
-
-	wxLogDebug( wxT("COM stage #%d starting com. strInit=%s"), iStage++,strInit );//0
-	wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
-	if (!reOptions.Matches(strInit)) return false;
+	wxLogDebug( wxT("COM stage #%d starting com. strInit=%s"), iStage++,wxString(strInit.c_str(), wxConvUTF8));//0
+	std::vector< std::string> vParam ;
+	//wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|RTS|DTR|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
+	//if (!reOptions.Matches(strInit)) return false;
+	if (!splitString(strInit, ':', vParam )) return false;
 	wxLogDebug( wxString::Format(wxT("COM stage #%d"), iStage++));
-	handle = CreateFile(wxString(wxT("\\\\.\\")+reOptions.GetMatch(strInit, 1)).wc_str() , GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );
+	//handle = CreateFile(wxString(wxT("\\\\.\\")+reOptions.GetMatch(strInit, 1)).wc_str() , GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );
+	handle = CreateFileA(std::string(std::string("\\\\.\\")+vParam[0]).c_str() , GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );
 
-	wxLogDebug(wxString(wxT("\\\\.\\")+reOptions.GetMatch(strInit, 1)) );
+	wxLogDebug(wxString(std::string(std::string("\\\\.\\")+vParam[0]).c_str(), wxConvUTF8));
 	wxLogDebug( wxT("COM stage #%d"), iStage++);
 	if (handle == INVALID_HANDLE_VALUE) return false;
 	GetCommTimeouts(handle, &initTimeouts);
 	wxLogDebug( wxString::Format(wxT("COM stage #%d\nhandle opened"), iStage++));
-	if (!reOptions.GetMatch(strInit, 2).IsEmpty()){
-		lBaud = canonizeBaud(wxString(reOptions.GetMatch(strInit, 2))); 
+	//if (!reOptions.GetMatch(strInit, 2).IsEmpty()){
+	if(vParam.size() > 1){
+		//lBaud = canonizeBaud(wxString(reOptions.GetMatch(strInit, 2))); 
+		lBaud = canonizeBaud(wxString(vParam[1].c_str(), wxConvUTF8)); 
 		if (lBaud < 0){
 			PurgeComm(handle,  PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR );
 			CloseHandle(handle);	
@@ -61,8 +67,10 @@ bool DevSerial::connect(const std::string& stdstrInit) {
 	}
 
 	wxLogDebug( wxT("COM stage #%d Baud OK"), iStage++);
-	if (!reOptions.GetMatch(strInit, 3).IsEmpty()){
-		wxString sMode(reOptions.GetMatch(strInit, 3));
+	//if (!reOptions.GetMatch(strInit, 3).IsEmpty()){
+	if(vParam.size() > 2){
+		//wxString sMode(reOptions.GetMatch(strInit, 3));
+		wxString sMode(wxString(vParam[2].c_str(), wxConvUTF8)); 
 		long lSize;
 		if (!(sMode.Mid(0,1).ToLong(&lSize))) {
 			PurgeComm(handle,  PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR );
@@ -85,10 +93,12 @@ bool DevSerial::connect(const std::string& stdstrInit) {
 		wxLogDebug( wxString::Format(wxT("COM stage #%d Parity OK"), iStage++));
 		if(sMode.Mid(2,1) == wxT("2")) cStopBits = TWOSTOPBITS;
 		else cStopBits = ONESTOPBIT;
-		if (!reOptions.GetMatch(strInit, 4).IsEmpty()){
+		if(vParam.size() > 3){
 
-			wxLogDebug( wxString::Format(wxT("COM stage #%d Flow control=%s"), iStage++, reOptions.GetMatch(strInit, 4) ));
-			wxString sFlowControll(reOptions.GetMatch(strInit, 4));
+			//wxLogDebug( wxString::Format(wxT("COM stage #%d Flow control=%s"), iStage++, reOptions.GetMatch(strInit, 4) ));
+			wxLogDebug( wxString::Format(wxT("COM stage #%d Flow control=%s"), iStage++, wxString(vParam[3].c_str(), wxConvUTF8))); 
+			//wxString sFlowControll(reOptions.GetMatch(strInit, 4));
+			wxString sFlowControll( wxString(vParam[3].c_str(), wxConvUTF8));
 			if (!sFlowControll.CmpNoCase(wxT("RTS"))){
 				fRtsControl = RTS_CONTROL_ENABLE;
 				fDtrControl = DTR_CONTROL_DISABLE;

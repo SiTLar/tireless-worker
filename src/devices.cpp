@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <ctime>
+#include "tools.hpp"
 #include "logfile.hpp"
 #include "logplot.hpp"
 #include "com.hpp"
@@ -32,3 +33,18 @@ void fnGenDevs(HandlerLibInterface* inp ){
 	inp->mapLogsInfo[std::string("PLOT")] = std::string("Graphical output based on wxMathPlot");
 }
 
+bool splitString(const std::string& strInput, char token, std::vector<std::string>& out){
+	int start = 0,  stop = 0;
+	stop = strInput.find(token, start);
+	if( std::string::npos == stop) return false;
+	do{
+		stop = strInput.find(token, start);
+		if(stop != start){
+			std::string strPart(strInput.substr(start, stop - start ));
+			if (!strPart.empty()) out.push_back(strPart);
+		}
+		start = stop+1;
+	}while ( std::string::npos != stop );
+	return true;
+
+}

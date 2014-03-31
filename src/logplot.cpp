@@ -8,36 +8,20 @@ extern "C"{
 #include <map>
 #include <string>
 #include <sstream>
-#include <wx/regex.h>
 #include <wx/msgdlg.h>
 #include <wx/socket.h>
 #include "interface.h"
 #include "logplot.hpp"
+#include "tools.hpp"
 //#include "execreq.h"
 
-std::vector< std::string> * splitString(const std::string& strInput, char token){
-	int start = 0,  stop = 0;
-	stop = strInput.find(token, start);
-	if( std::string::npos == stop) return NULL;
-	std::vector<std::string> * out = new std::vector<std::string>;
-	do{
-		stop = strInput.find(token, start);
-		if(stop != start){
-			std::string strPart(strInput.substr(start, stop - start ));
-			if (!strPart.empty()) out->push_back(strPart);
-		}
-		start = stop+1;
-	}while ( std::string::npos != stop );
-	return out;
-
-}
 bool LogPlot::init(const std::string &str) {
 	//unsigned long ulLocalId;
 	wxString sColour, sLabel;
 	//, sParam(str.c_str(), wxConvUTF8);
 	unsigned long attachT = myTID, attachI = myId;
 	bool rc = false;
-	std::vector< std::string> *vParam ;
+	std::vector< std::string> vParam ;
 	char pcLabel[256] = {0}, pcColour[256] = {0};
 	dtStart.SetToCurrent();
 	wxIPV4address client;
@@ -55,14 +39,14 @@ bool LogPlot::init(const std::string &str) {
 	   return false;
 	   }
 	   */
-	if (vParam = splitString(str, ':'))
-		switch(vParam->size()){
+	if (splitString(str, ':', vParam )){
+		switch(vParam.size()){
 			case 4:
 				//reParam.GetMatch(sParam, 4).ToULong(&attachT);
-				wxString(vParam->at(3).c_str(), wxConvUTF8).ToULong(&attachT);
+				wxString(vParam[3].c_str(), wxConvUTF8).ToULong(&attachT);
 				//wxLogMessage(wxT("attachT=%d"), attachT);
 			case 3:
-				wxString(vParam->at(2).c_str(), wxConvUTF8).ToULong(&attachI);
+				wxString(vParam[2].c_str(), wxConvUTF8).ToULong(&attachI);
 				//wxLogMessage(wxT("attachI=%d"), attachI);
 				//	if (reParam.GetMatch(sParam, 3).ToULong(&attachI))
 				{
@@ -76,36 +60,37 @@ bool LogPlot::init(const std::string &str) {
 				}
 
 			case 2:
-				//wxLogMessage(wxT("Colour=%s"), vParam->at(1).c_str() );
+				//wxLogMessage(wxT("Colour=%s"), vParam[1].c_str() );
 				//	sColour = reParam.GetMatch(sParam, 2);
-				if(vParam->at(1).length()){
+				if(vParam[1].length()){
 					LPString data;
 					data.cCommand = 'O';
 					data.ulTID = myTID;
 					data.ulLID = myId;
-					data.length = vParam->at(1).length()< 255?vParam->at(1).length():255; 
-					memmove(data.str, vParam->at(1).c_str(), data.length);
+					data.length = vParam[1].length()< 255?vParam[1].length():255; 
+					memmove(data.str, vParam[1].c_str(), data.length);
 					rc |=send((wxChar*)&data, sizeof(data));
 				}
 
 			case 1:
-				//wxLogMessage(wxT("Label=%s"), vParam->at(0).c_str() );
+				//wxLogMessage(wxT("Label=%s"), vParam[0].c_str() );
 				//sLabel = reParam.GetMatch(sParam, 1);
-				if(vParam->at(0).length()){
+				if(vParam[0].length()){
 					LPString data;
 					data.cCommand = 'L';
 					data.ulTID = myTID;
 					data.ulLID = myId;
 					//data.length = sLabel.length() > 256?sLabel.length():255;
 					//memmove(data.str, sLabel.c_str(), data.length);
-					data.length = vParam->at(0).length()< 255?vParam->at(0).length():255; 
-					memmove(data.str, vParam->at(0).c_str(), data.length);
+					data.length = vParam[0].length()< 255?vParam[0].length():255; 
+					memmove(data.str, vParam[0].c_str(), data.length);
 					rc |= send((wxChar*)&data, sizeof(data));
 				}
 				return rc;
 			default: 
 				break;
 		}
+	}
 
 	LPCreatePlot data;
 	data.cCommand = 'C';
