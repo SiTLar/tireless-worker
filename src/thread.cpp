@@ -2,6 +2,7 @@
 #include <wx/filedlg.h>
 #include <wx/textdlg.h>
 #include <wx/regex.h>
+#include <wx/filename.h>
 
 extern "C"{
 #include <string.h>
@@ -479,7 +480,8 @@ APIRET APIENTRY rfNewTask( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_TYPE
 	//RXSTRING ret = {0,0};
 	if ( my_checkparam( NULL, (char *)name, argc, 1, 1 ) ) return -1;
 	RexxQueryExit("sayHandler", NULL, &query_flag, glData.user_info);
-	NewTaskReq * newtask = new NewTaskReq (glData.pthr->getID(), new wxString(wxString::FromUTF8(argv[0].strptr, argv[0].strlength)));
+	wxFileName fnCScript(glData.pthr->sFullName);
+	NewTaskReq * newtask = new NewTaskReq (glData.pthr->getID(), new wxString(fnCScript.GetPath()+wxFileName::GetPathSeparator() + wxString::FromUTF8(argv[0].strptr, argv[0].strlength)));
 	wxCommandEvent event( wxEVT_USER_FIRST, NEW_TASK );
 	event.SetClientData(newtask);
 

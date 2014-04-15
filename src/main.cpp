@@ -177,7 +177,7 @@ bool MyFrame::CreateThread(MyFrame *m_frame, const wxString&sFPath, unsigned lon
 	if (!LoadScript(sFPath, sScript) )return false;
 	
 	wxString sFName = wxFileName(sFPath).GetFullName();
-	MyThread *thread = new MyThread(m_frame, sScript, sFName);
+	MyThread *thread = new MyThread(m_frame, sScript, sFName, sFPath);
 	if ( thread->Create() != wxTHREAD_NO_ERROR ){
 		wxLogError(wxT("Can't create thread!"));
 		return false;
@@ -347,7 +347,7 @@ void MyFrame::onNewTask(wxCommandEvent& evt){
 	wxString str (wxDateTime::Now().Format(wxT("[%F %H-%M-%S]")));
 	NewTaskReq* req = reinterpret_cast<NewTaskReq*>(evt.GetClientData());
 	str << wxString::Format(wxT(" (TID#%ld) "), req->owner);//->GetId());
-	str << *(req->psTaskName); 
+	//str << *(req->psTaskName); 
 	WriteText(str, wxTextAttr(*wxBLUE));
 
 	unsigned long TID;

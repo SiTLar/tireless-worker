@@ -75,8 +75,8 @@ class MyThread : public wxThread {
 	std::multimap<wxString,unsigned long>::iterator itTList;
 	public:
 	//MyThread(MyFrame* parent, wxString* psScript, const wxString &name):wxThread(wxTHREAD_DETACHED), 
-	MyThread(wxFrame* parent, wxString sScript, const wxString &name):wxThread(wxTHREAD_DETACHED), 
-	m_parent(parent), sName(name), sRunningScript(sScript), fTerminated(false){
+	MyThread(wxFrame* parent, wxString sScript, const wxString &name, const wxString &fname):wxThread(wxTHREAD_DETACHED), 
+	m_parent(parent), sName(name), sFullName(fname), sRunningScript(sScript), fTerminated(false){
 		dtCreated.SetToCurrent();
 		logs = new vecid<LogDesc *>(0);
 	}
@@ -96,6 +96,7 @@ class MyThread : public wxThread {
 	
 	wxFrame* m_parent;
 	wxString sName;
+	wxString sFullName;
 	wxString sRunningScript;
 	bool fTerminated;
 };
