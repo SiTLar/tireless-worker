@@ -355,7 +355,7 @@ void MyFrame::onNewTask(wxCommandEvent& evt){
 
 	req->TID = TID;
 	req->ready.Post();
-	WriteText(wxString::Format(wxT(" has started a new task (TID#%ld)\n"), TID), wxTextAttr(*wxBLUE));
+	WriteText(wxString::Format(wxT("has started a new task (TID#%ld)\n"), TID), wxTextAttr(*wxBLUE));
 }
 
 void MyFrame::onListSized(wxSizeEvent &  WXUNUSED(event) ){m_listCtrl1->onSized();}

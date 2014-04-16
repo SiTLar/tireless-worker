@@ -532,8 +532,8 @@ APIRET APIENTRY rfSendMSG( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_TYPE
 	//RXSTRING ret = {0,0};
 	RexxQueryExit("sayHandler", NULL, &query_flag, glData.user_info);
 	if ( my_checkparam( NULL, (char *)name, argc, 2, 2 ) ) return -1;
-	//if (!wxString::FromUTF8(argv[0].strptr, argv[0].strlength).ToULong(&TID, 0x10)) return -1; 
-	if (sscanf(argv[0].strptr, "%ld", &TID) == EOF) return -1;	
+	if (!wxString::FromUTF8(argv[0].strptr, argv[0].strlength).ToULong(&TID)) return -1; 
+	//if (sscanf(argv[0].strptr, "%ld", &TID) == EOF) return -1;	
 	if (!vciMailingList[TID]) return RxReturnNumber(NULL, retstr, 1);
 	wxString* psMsg = new wxString(wxString::Format(wxT("%ld;"), glData.pthr->getID())<<wxString::FromUTF8(argv[1].strptr, argv[1].strlength));
 	{
