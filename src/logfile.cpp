@@ -20,7 +20,7 @@ bool LogFile::init( const std::string&) {
         memmove(&dtStart, std::localtime ( &rawtime ), sizeof(struct std::tm));
         sprintf(pcResult, "-%04d-%02d-%02d-%02d-%02d-%02d-%08ld-%04d", 
                         1900 + dtStart.tm_year,
-                        dtStart.tm_mon,
+                        dtStart.tm_mon + 1,
                         dtStart.tm_mday,
                         dtStart.tm_hour,
                         dtStart.tm_min,
