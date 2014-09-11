@@ -178,6 +178,7 @@ bool DevSerial::attribute(Attr* pAttrStr){
 		if (sAttr.IsEmpty() && sVal.IsEmpty())return false;
 		std::map<wxString, bool (*) ( DevSerial*,const  wxString &), IcaseCmp>::iterator it (mapAttr.find(sAttr));
 		if(it == mapAttr.end()) return false;
+		wxLogDebug(wxT("DevAttrib:")+sAttr+wxT("|")+sVal); 
 		if(!it->second(this, sVal)) return false;
 		pAttrStr = pAttrStr->next;
 	}while(pAttrStr);
@@ -212,7 +213,8 @@ bool DevSerial::read(std::string*str, int count) {
 	//fprintf(stderr, "iReadCount=%d, count=%d\n", iReadCount, count );
 	//for(int idx = 0;idx< iReadCount; idx++) if(buf[idx])fprintf(stderr, "%2x",buf[idx]);
 
-	*str = std::string(buf, iReadCount - iTermLen);
+	if((iReadCount - iTermLen) > 0)
+		*str = std::string(buf, iReadCount - iTermLen);
 	return true;
 };
 inline long DevSerial::canonizeBaud(wxString s){
@@ -344,7 +346,7 @@ static bool DevSerial::setOTerm(DevSerial *o, const wxString &str){
 static bool DevSerial::setReadTimeout(DevSerial *o, const wxString &str){
 	COMMTIMEOUTS timeouts = {0};
 	unsigned long ulTimeout;
-	if (str.ToULong(&ulTimeout)) return false;
+	if (!str.ToULong(&ulTimeout)) return false;
 	if(!GetCommTimeouts(o->handle, &timeouts)) return false;
 	timeouts.ReadTotalTimeoutConstant = ulTimeout; 
 	return SetCommTimeouts(o->handle, &timeouts);
@@ -352,7 +354,7 @@ static bool DevSerial::setReadTimeout(DevSerial *o, const wxString &str){
 static bool DevSerial::setWriteTimeout(DevSerial *o, const wxString &str){
 	COMMTIMEOUTS timeouts = {0};
 	unsigned long ulTimeout;
-	if (str.ToULong(&ulTimeout)) return false;
+	if (!str.ToULong(&ulTimeout)) return false;
 	if(!GetCommTimeouts(o->handle, &timeouts)) return false;
 	timeouts.WriteTotalTimeoutConstant = ulTimeout; 
 	return SetCommTimeouts(o->handle, &timeouts);

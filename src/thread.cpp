@@ -38,22 +38,31 @@ struct delete_it: public std::unary_function< Type , void > {
 };
 
 void MyThread::OnExit(){
-	vciMailingList.erase(myID);
+	wxCommandEvent event( wxEVT_USER_FIRST, elTHREAD_LIFECYCLE );
+::wxLogDebug( wxT("%d: %s sName=%s"), myID, wxT(" event ready"), sName);
+	//event.SetClientData(GetId());
+	event.SetClientData(static_cast<void*>(new ThreadMsg(myID, sName)));
+::wxLogDebug( wxT("%d: %s"), myID, wxT(" client data ready"));
+		vciMailingList.erase(myID);
+	::wxLogDebug( wxT("%d: %s"), myID, wxT(" vciMailingList.erase(myID);"));
+	
 	{
 		wxMutexLocker ml(mtxTaskList);
 		TaskList.erase(itTList);
 	}
+::wxLogDebug( wxT("%d: %s"),  myID,wxT(" TaskList.erase(itTList);"));
 	fGetHBroker()->remove(this);	
 	std::for_each(logs->begin(), logs->end(), delete_it_pair<LogDesc *>());
+
+::wxLogDebug( wxT("%d: %s"),  myID,wxT(" logs deleted"));
 	delete logs;
 	{
 		wxMutexLocker ml(mtxMail);
 		std::for_each(lstMail.begin(), lstMail.end(), delete_it<wxString *>());
 	}
-	wxCommandEvent event( wxEVT_USER_FIRST, elTHREAD_LIFECYCLE );
-	//event.SetClientData(GetId());
-	event.SetClientData(static_cast<void*>(new ThreadMsg(myID, sName)));
-	wxPostEvent( m_parent, event );
+::wxLogDebug( wxT("%d: %s"), myID, wxT(" mail deleted"));
+wxPostEvent( m_parent, event );
+::wxLogDebug( wxT("%d: %s"), myID, wxT(" event sent "));
 	//delete psRunningScript;
 }
 void MyThread::setID(unsigned long inp) {
@@ -481,14 +490,16 @@ APIRET APIENTRY rfNewTask( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_TYPE
 	if ( my_checkparam( NULL, (char *)name, argc, 1, 1 ) ) return -1;
 	RexxQueryExit("sayHandler", NULL, &query_flag, glData.user_info);
 	wxFileName fnCScript(glData.pthr->sFullName);
+	::wxLogDebug((glData.pthr->sFullName + wxT(" is starting ") + (fnCScript.GetPath()+wxFileName::GetPathSeparator() + wxString::FromUTF8(argv[0].strptr, argv[0].strlength))).c_str());;
 	NewTaskReq * newtask = new NewTaskReq (glData.pthr->getID(), new wxString(fnCScript.GetPath()+wxFileName::GetPathSeparator() + wxString::FromUTF8(argv[0].strptr, argv[0].strlength)));
 	wxCommandEvent event( wxEVT_USER_FIRST, NEW_TASK );
 	event.SetClientData(newtask);
-
 	; 
 	wxPostEvent(glData.pthr->m_parent , event );
+	::wxLogDebug((glData.pthr->sFullName + wxT(" event sent")).c_str());
 	if (newtask->ready.WaitTimeout(5000) != wxSEMA_NO_ERROR ) return RxReturnNumber(NULL, retstr, -1);
 	delete newtask;
+	::wxLogDebug((glData.pthr->sFullName + wxT(" all OK")).c_str());
 	return RxReturnNumber(NULL, retstr, newtask->TID);
 }
 /*
@@ -745,6 +756,7 @@ long fRunScript(wxString &sOutput, MyThread *m_thread, wxString &sScript ){
 			&rc_short,		// converted return code
 			&retstr);	// returned result
 
+	::wxLogDebug((glData.pthr->sFullName + wxT(" RexxStart done")).c_str());
 	//m_thread->Sleep(10000);
 	Instore[0].strlength = 8;
 	//wxMessageBox(wxString::FromUTF8(Instore[1].strptr,Instore[1].strlength));
@@ -752,8 +764,10 @@ long fRunScript(wxString &sOutput, MyThread *m_thread, wxString &sScript ){
 	RexxFreeMemory(Instore[1].strptr);
 	RexxDeregisterExit("sayHandler", NULL);
 	funcs = rfMainArray;
+	::wxLogDebug((glData.pthr->sFullName + wxT(" rexx memory freed")).c_str());
 	do RexxDeregisterFunction(funcs->first); 
 	while((++funcs)->first);
+	::wxLogDebug((glData.pthr->sFullName + wxT(" rexx functions dereged")).c_str());
 	sOutput << wxString::FromUTF8(retstr.strptr,retstr.strlength);
 	return rc;
 }
