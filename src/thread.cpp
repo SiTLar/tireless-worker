@@ -751,7 +751,8 @@ long fRunScript(wxString &sOutput, MyThread *m_thread, wxString &sScript ){
 			Instore,	// script is preloaded
 			"TirelessWorker",	// default address name
 			//RXSUBROUTINE,   // calling as a subcommand
-			RXCOMMAND|RXRESTRICTED,
+			//RXCOMMAND|RXRESTRICTED,
+			RXCOMMAND,
 			pExits,		// no exits used
 			&rc_short,		// converted return code
 			&retstr);	// returned result

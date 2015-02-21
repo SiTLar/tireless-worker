@@ -11,8 +11,8 @@
 !define DESCRIPTION "Experimet automation and data acquisition"
 # These three must be integers
 !define VERSIONMAJOR 0
-!define VERSIONMINOR 9
-!define VERSIONBUILD 3
+!define VERSIONMINOR 10 
+!define VERSIONBUILD 4
 # These will be displayed by the "Click here for support information" link in "Add/Remove Programs"
 # It is possible to use "mailto:" links in here to open the email client
 !define HELPURL "http://..." # "Support Information" link
