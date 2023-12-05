@@ -1,44 +1,51 @@
+#include <wx/dynlib.h>
 extern "C"{
 #include <stdio.h>
 #include <string.h>
 //#include "rexxsaa.h"
 #include "Lusbapi.h"
 }
-//#include <wx/thread.h>
 //#include <map>
 
-class DevLCard: public DevDesc{
+class DevLCard: public DevInterface{
 	wxDynamicLibrary dllLCardUSB;
 	
 
-	friend void fnGenDevs();
+	friend void fnGenDevs(HandlerLibInterface*);
 	static std::map<wxString, unsigned long> mapFileAttr;
 	protected:
 	// указатель на интерфейс модуля
 	ILE440 *pModule;
 	MODULE_DESCRIPTION_E440 ModuleDescription;
 	ADC_PARS_E440 ap;
-	
+	int nMeanWindow;
 
 	DevLCard();
 
 	public:
-	DevLCard(const DevLCard& ) :DevDesc(){ };
+	DevLCard(const DevLCard& ) :DevInterface(){ };
 	virtual ~DevLCard(){
 	//	disconnect();
 	  };
-	virtual DevDesc* clone(){return new DevLCard(*this);};
+	virtual DevInterface* clone(){return new DevLCard(*this);};
 	virtual void disconnect() {
-		wxMutexLocker ml(*pMutex);
 		if(!pModule->ReleaseLInstance()) {wxLogError(wxString::Format(wxT(" ReleaseLInstance() --> Bad\n"))); }
 		pModule = NULL;
 		
 	};
 
-	virtual bool connect(const wxString& strInit) {
-		wxString sFname = strInit.Mid(6); 
-		pMutex.init(sFname);
-		wxMutexLocker ml(*pMutex);
+	std::string makeUniqueDev(const std::string& strInit) const {
+
+		return strInit;
+	}
+	std::string makeBusLock(const std::string& strInit) const {
+		size_t uiInitPos = strInit.find("::");
+		if (uiInitPos == std::string::npos) return std::string("BAD_INIT");
+
+		return strInit.substr(0, uiInitPos );
+	}
+	virtual bool connect(const std::string& ) {
+		nMeanWindow = 10;
 		if(!dllLCardUSB.Load(wxT("Lusbapi"))) 
 			{wxLogError(wxString::Format(wxT("Can't load Lusbapi dll"))); return false;}; 
 		LPVOID WINAPI (*CreateLInstance)(PCHAR const ) = reinterpret_cast<LPVOID WINAPI (*)(PCHAR const )>(dllLCardUSB.GetSymbol(wxT("CreateLInstance")));
@@ -56,7 +63,7 @@ class DevLCard: public DevDesc{
 		if(!pModule->GET_ADC_PARS(&ap)) {wxLogError(wxString::Format(wxT(" GET_ADC_PARS() --> Bad\n"))); return false;};
 		ap.IsCorrectionEnabled = true;					// разрешим корректировку данных на уровне драйвера DSP
 		ap.InputMode = NO_SYNC_E440;						// обычный сбор данных безо всякой синхронизации ввода
-		ap.ChannelsQuantity = 4; 		// четыре активных канала
+		ap.ChannelsQuantity = 15; 		// четыре активных канала
 		// формируем управляющую таблицу
 		for(i = 0x0; i < ap.ChannelsQuantity; i++)
 			ap.ControlTable[i] = (WORD)(i | (ADC_INPUT_RANGE_2500mV_E440 << 0x6));
@@ -94,7 +101,7 @@ class DevLCard: public DevDesc{
 
 	};
 
-	virtual bool write(const wxString& str){
+	virtual bool write(const std::string& str){
 		/* 
 		   bool rc = fputs(str.char_str(), handle ) !=  EOF?true:false;
 		   fflush(handle);
@@ -102,9 +109,36 @@ class DevLCard: public DevDesc{
 		return true;
 	};  
 
-	virtual bool read(wxString*str, int count) {
+	virtual bool read(std::string*str, int count) {
+	
+		double * arrDOut = new double[ap.ChannelsQuantity];
+		double * arrDOutMean = new double[ap.ChannelsQuantity];
+		
+		memset(arrDOutMean, 0, sizeof(double)*ap.ChannelsQuantity);
+		for(int idx = 0; idx < nMeanWindow; idx++){
+			if(!read_once(arrDOut, str)){
+				delete[] arrDOut;
+				delete[] arrDOutMean;
+				return false;
+			}
+
+			for (int i =0; i< ap.ChannelsQuantity; i++)
+				arrDOutMean[i] += arrDOut[i]/nMeanWindow;
+		}
+		wxString output;
+		for (int i =0; i< ap.ChannelsQuantity; i++)
+			output << wxString::Format(wxT("%e;"), arrDOutMean[i]);
+		*str = std::string(output.mb_str());
+		delete[] arrDOut;
+		delete[] arrDOutMean;
+		return true;
+	}
+	
+	
+	bool read_once(double *arrDOut , std::string *str){
 		short * buf = new short[ap.ChannelsQuantity];
 		bool ret = false;
+		double val;
 		/*
 		   if (count == 0) count = 1024;
 		   count = count<1024?count:1024;
@@ -117,24 +151,53 @@ class DevLCard: public DevDesc{
 		//if (!retCount) return false;
 		 *str = wxString::From8BitData(reinterpret_cast<char *>(buf), retC<wx/dynlib.h>ount);
 		 */
-		str->Clear();
-		if(pModule->ADC_KADR(buf)){
-			for(int idx = 0; idx < ap.ChannelsQuantity; ++idx)
-				//*str << wxString::Format(wxT("%d;"), buf[idx]/* /8192*ADC_INPUT_RANGES_E140[(ap.ControlTable[idx] & 0xC0) >> 6 ]*/);
-				*str << wxString::Format(wxT("%e;"), static_cast<double>(buf[idx]) /8000*ADC_INPUT_RANGES_E140[(ap.ControlTable[idx] & 0xC0) >> 6 ]);
-			ret = true;
-		}
+		//str->clear();
+		int iAmp = 0;
+		int fOK = 1;
+		int * arr_amp = new int[ap.ChannelsQuantity];
+		do{
+			if(pModule->ADC_KADR(buf)){
+				fOK = 1;		
+				for(int idx = 0; idx < ap.ChannelsQuantity; ++idx){
+					iAmp =   (ap.ControlTable[idx] & 0xC0) >> 6;
+					if ((abs(buf[idx])<1800) && (iAmp <3) ) {
+						arr_amp[idx] = iAmp + 1; 
+						fOK = 0;
+					}else if ((abs(buf[idx])>7500) && iAmp){
+						arr_amp[idx] = iAmp - 1; 
+						fOK = 0;
+						
+					}else arr_amp[idx] = iAmp; 
+					if(!fOK) continue;
+					val = buf[idx];
+					arrDOut[idx] = val/8000*ADC_INPUT_RANGES_E140[iAmp];
+
+					//*str << wxString::Format(wxT("%d;"), buf[idx]/* /8192*ADC_INPUT_RANGES_E140[(ap.ControlTable[idx] & 0xC0) >> 6 ]*/);
+					 ///8000*ADC_INPUT_RANGES_E140[(ap.ControlTable[idx] & 0xC0) >> 6 ]);
+					//*str << wxString::Format(wxT("%e;"), static_cast<double>(buf[idx]) /8000*ADC_INPUT_RANGES_E140[(ap.ControlTable[idx] & 0xC0) >> 6 ]);
+				}
+				if(!fOK) {
+					pModule->STOP_ADC();
+
+					for(int i = 0x0; i < ap.ChannelsQuantity; i++)
+						ap.ControlTable[i] = (WORD)(i | (arr_amp[i] << 0x6));
+					if(!pModule->SET_ADC_PARS(&ap)) {*str = std::string(wxString::Format(wxT(" SET_ADC_PARS() --> Bad")).mb_str()); return false;};
+					pModule->START_ADC();
+				}
+				ret = true;
+			}else {*str = std::string(wxString::Format(wxT(" ADC_KADR() --> Bad")).mb_str()); return false;}
+		} while (!fOK);
+		
 
 
-
+		delete[] arr_amp;
 		delete[] buf;
 		return ret;
 	};
 
 };
-
 std::map<wxString, unsigned long> DevLCard::mapFileAttr;
-DevLCard::DevLCard():DevDesc(){
+DevLCard::DevLCard():DevInterface(){
 	mapFileAttr[wxString(wxT("SEEK_SET"))] = SEEK_SET;
 	mapFileAttr[wxString(wxT("SEEK_CUR"))] = SEEK_CUR ;
 	mapFileAttr[wxString(wxT("SEEK_END"))] = SEEK_END;

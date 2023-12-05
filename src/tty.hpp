@@ -8,16 +8,9 @@ extern "C"{
 //#include <wx/thread.h>
 #include <wx/regex.h>
 #include <string>
-
 #include <map>
 
-struct IcaseCmp : public std::binary_function <std::string,std::string,bool> {
-	bool operator() (const std::string& x, const std::string& y) const{
-		
-		return (strcasecmp(x.c_str(), y.c_str())<0);
-	
-	};
-};
+#include "tools.hpp"
 
 class DevTTY: public DevInterface{
 
@@ -29,11 +22,14 @@ class DevTTY: public DevInterface{
 	int handle;
 	std::string sTerm;
 	static bool setBaud ( DevTTY*, const std::string&);
+	static bool setCBaud ( DevTTY*, long);
 	static bool setStopBits ( DevTTY*, const std::string&);
 	static bool setParity ( DevTTY*, const std::string&);
+	static bool setDTR( DevTTY*, const std::string&);
+	static bool setRTS ( DevTTY*, const std::string&);
 	static bool setDataBits ( DevTTY*, const std::string&);
-	static bool setTimeout ( DevTTY*, const std::string&);
-	static bool setTerm ( DevTTY*, const std::string&);
+//	static bool setTimeout ( DevTTY*, const std::string&);
+//	static bool setTerm ( DevTTY*, const std::string&);
 	long canonizeBaud(const wxString& ); 
 
 	public:
@@ -45,6 +41,6 @@ class DevTTY: public DevInterface{
 	virtual bool connect(const std::string& strInit) ; 
 	virtual bool attribute(Attr* pAttrStr); 
 	virtual bool write(const std::string& str);  
-	virtual bool read(std::string*str, int count) ;
+	virtual bool read(std::string*str, std::string*, int count) ;
 
 };

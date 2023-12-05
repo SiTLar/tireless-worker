@@ -3,12 +3,12 @@ extern "C"{
 #include <string.h>
 //#include "rexxsaa.h"
 }
+#include "interface.h"
+#include "logfile.hpp"
 #include <string>
 #include <sstream>
 #include <ctime>
 #include <map>
-#include "interface.h"
-#include "logfile.hpp"
 
 bool LogFile::init( const std::string&) {
         char pcResult[1+5+3+3+3+3+3+9+5+1] = {0};

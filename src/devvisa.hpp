@@ -23,6 +23,6 @@ class DevVisa: public DevInterface{
 	virtual bool attribute(Attr* pAttrStr);
 
 	virtual bool write(const std::string& str);
-	virtual bool read(std::string*str, int count) ;
+	virtual bool read(std::string*str, std::string*,int count) ;
 
 };

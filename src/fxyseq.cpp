@@ -42,12 +42,19 @@ FXYSeq::~FXYSeq(){
 }
 
 void FXYSeq::addData( double x, double y){
+	if (data.empty()){
+		m_minX = x;
+		m_maxX = x;
+		m_minY = y;
+		m_maxY = y;
+	} else {
+		m_minX = x<m_minX?x:m_minX;
+		m_maxX = x>m_maxX?x:m_maxX;
+		m_minY = y<m_minY?y:m_minY;
+		m_maxY = y>m_maxY?y:m_maxY;
+	}
 	// Copy the data:
 	data.push_back(FXY_POINT(x,y)); 
 	// Update internal variables for the bounding box.
-	m_minX = x<m_minX?x:m_minX;
-	m_maxX = x>m_maxX?x:m_maxX;
-	m_minY = y<m_minY?y:m_minY;
-	m_maxY = y>m_maxY?y:m_maxY;
 
 }

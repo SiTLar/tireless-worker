@@ -92,7 +92,8 @@ elMFrame::elMFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_button1 = new wxButton( this, wxID_ANY, wxT("Terminate"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_button1->Enable( false );
 	
-	bSizer8->Add( m_button1, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
+	//bSizer8->Add( m_button1, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
+	bSizer8->Add( m_button1, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_checkBox1 = new wxCheckBox( this, wxID_ANY, wxT("sure"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer8->Add( m_checkBox1, 0, wxALL|wxEXPAND, 5 );

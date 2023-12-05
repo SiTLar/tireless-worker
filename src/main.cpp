@@ -2,22 +2,33 @@
 #include <wx/filename.h>
 #include <wx/textfile.h>
 #include <wx/dir.h>
+#include <wx/socket.h>
 #include <wx/xml/xml.h>
 #include <wx/app.h>
 #include <wx/process.h>
+//#include <wx/bmpbndl.h>
+#include <locale.h>
 #include "thread.h"
 #include "devabstruction.hpp"
 #include "broken.xpm"
 #include <string>
 #include "md5.h"
 #include "main.h"
+/*
+#ifndef wxBitmapBundle
+#define wxBitmapBundle BB(X) (X)
+#endif
+*/
 enum{	MAX_DYN_MENU_ITEMS = 4, MAX_TOOLS = 10, TIME_QUANT = 500};
 extern Vciml vciMailingList;
 InternalConfigStuct strIntConf;
 unsigned long ulTimeQuant;
+wxLogStderr EL;
 MyFrame::MyFrame( wxWindow* parent ) : elMFrame( parent ),oConfig(0)  {
-
+ setlocale(LC_ALL, "C");
+  wxLog::SetActiveTarget(&EL);
 	wxInitAllImageHandlers();
+	wxSocketBase::Initialize();
 	strIntConf.ulMaxMenuTasks = MAX_DYN_MENU_ITEMS;
 	strIntConf.ulMaxTools = MAX_TOOLS;
 	ulTimeQuant = TIME_QUANT;
@@ -145,7 +156,7 @@ bool MyFrame::LoadScript(const wxString &filename, wxString &sGoodScript){
 	std::list<wxString> lIncludes;
 	wxRegEx reRegexdo(wxT("\\mdo\\M"), wxRE_ADVANCED + wxRE_ICASE );
 	wxRegEx reRegexInclude(wxT("#include \"(.+?)\""), wxRE_ADVANCED + wxRE_ICASE );
-	wxRegEx reRegexSleep(wxT("([\\w\\?\\!\\.\\_]*\\s*=\\s*)*(call\\s*)?sleep[\\s\\(]\\s*([.0-9]+)(\\s*\\))?"), wxRE_ADVANCED + wxRE_ICASE );
+	wxRegEx reRegexSleep(wxT("([\\w\\?\\!\\.\\_]*\\s*=\\s*)*(call\\s*)?sleep[\\s\\(]\\s*([-_.\\w]+)(\\s*\\))?"), wxRE_ADVANCED + wxRE_ICASE );
 	if (!file.Open(filename)){
 		wxMessageBox(wxT("Can't load ")+filename, wxT("Error loading script"),wxICON_ERROR );
 		return false; 
@@ -274,8 +285,8 @@ void MyFrame::onNewTool( wxCommandEvent& ){
 	wxString sPath(dlg.getFname());
 	wxFileName fnTask(sPath);
 	wxBitmap * bmp = new wxBitmap(dlg.getBitmap());
-
-	m_toolBar1->AddTool( strIntConf.ulIDTools + m_toolBar1->GetToolsCount(), fnTask.GetFullName(), *bmp/*dlg.getBitmap()*/, sPath/*description*/);
+	wxBitmapBundle BB(*bmp);
+	m_toolBar1->AddTool( strIntConf.ulIDTools + m_toolBar1->GetToolsCount(), fnTask.GetFullName(), BB/*dlg.getBitmap()*/, sPath/*description*/,wxITEM_NORMAL);
 	m_toolBar1->SetToolClientData(strIntConf.ulIDTools + m_toolBar1->GetToolsCount()-1, new wxVariant(dlg.sImagePath));
 	m_toolBar1->Realize();
 	if(m_toolBar1->GetToolsCount() == strIntConf.ulMaxTools)  GetMenuBar()->Enable(ID_MENUADDTOOL, false);
@@ -306,7 +317,8 @@ void MyFrame::onEditTool( wxMenuEvent& ){
 	wxFileName fnTask(sPath);
 	int pos = m_toolBar1->GetToolPos(idCTool);
 	m_toolBar1->DeleteTool(idCTool);
-	m_toolBar1->AddTool( idCTool, fnTask.GetFullName(), dlg.getBitmap(), sPath);
+	wxBitmapBundle BB(dlg.getBitmap());
+	m_toolBar1->AddTool( idCTool, fnTask.GetFullName(),BB , sPath);
 	m_toolBar1->Realize();
 	m_toolBar1->InsertTool( pos, m_toolBar1->RemoveTool(idCTool));
 	m_toolBar1->Realize();
@@ -384,6 +396,7 @@ void MyFrame::evhSendMsg( wxCommandEvent& WXUNUSED(event) ) {
 }
 void MyFrame::onClose(wxCloseEvent& WXUNUSED(event)) {
 	saveCfg();
+	wxSocketBase::Shutdown();
 	Destroy();
 }
 void MyFrame::OnQuit(wxCommandEvent& WXUNUSED(event)) {

@@ -21,7 +21,12 @@ bool DevVisa::connect(const std::string& strInit) {
 	char *buf = new char[uiHandleLength+1];
 	strInit.copy(buf,uiHandleLength ,0 );
 	buf[uiHandleLength ] = '\0';
-	int res = viOpen(defaultRM, buf, VI_NULL, VI_NULL, &handle);
+	int res = viOpen(defaultRM, buf, VI_NULL, VI_TMO_IMMEDIATE, &handle);
+	/*
+	#ifdef DEBUG
+		Format(wxT("viOpen:%x"), res);
+	#endif
+	*/
 	delete[] buf;
 
 	return ( res ==  VI_SUCCESS )?true:false;
@@ -38,14 +43,28 @@ std::string DevVisa::makeBusLock(const std::string& strInit) const {
 	return strInit.substr(0, uiInitPos );
 }
 bool DevVisa::attribute(Attr* pAttrStr){
+	unsigned long ulAttrVal;
 
 	do{
 		std::string strAttrN(pAttrStr->Attr_ID->strptr, pAttrStr->Attr_ID->strlength );
 		std::map<std::string, unsigned long>::iterator itAttrName;
+
+		if(strAttrN == std::string("SET_TERM")){
+			std::string newTerm(pAttrStr->Attr_VAL->strptr,pAttrStr->Attr_VAL->strlength);
+			if (newTerm.empty()) return false;
+			sTerm = newTerm;
+			return true;
+		}
+		if(strAttrN == std::string("SET_TIMEOUT")){
+			if (!std::sscanf(std::string(pAttrStr->Attr_VAL->strptr,pAttrStr->Attr_VAL->strlength).c_str(),"%lu", &ulAttrVal))
+				return false;
+			lReadTimeout = ulAttrVal;
+			return true;
+		}
+
 		itAttrName = mapVisaAttr.find(strAttrN);
 		if(itAttrName == mapVisaAttr.end()) return false;
 
-		unsigned long ulAttrVal;
 		if (!std::sscanf(std::string(pAttrStr->Attr_VAL->strptr,pAttrStr->Attr_VAL->strlength).c_str(),"%lu", &ulAttrVal))
 			return false;
 		if (int iVisaRet = viSetAttribute(handle, itAttrName->second, ulAttrVal) != VI_SUCCESS){
@@ -68,7 +87,7 @@ bool DevVisa::write(const std::string& str){
 
 };  
 
-bool DevVisa::read(std::string*str, int count) {
+bool DevVisa::read(std::string*str, std::string*err, int count) {
 
 	if (count == 0) count = 1024;
 	count = count<1024?count:1024;

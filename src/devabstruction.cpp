@@ -125,7 +125,7 @@ bool HandlerBroker::request(MyThread * TID, DEVID id, const std::string& str, st
 	wxMutexLocker ml(*(pDev->itBusLocker->second->pmtx));
 	//wxMutexLocker ml(pDev->locker);
 	bool rc = pDev->write(str);
-	rc &= pDev->read(pstr, count);
+	rc &= makeRead(TID, pDev,  pstr,count);
 	return rc;
 };
 bool HandlerBroker::read(MyThread * TID, DEVID id, std::string* pstr, int count){
@@ -134,9 +134,38 @@ bool HandlerBroker::read(MyThread * TID, DEVID id, std::string* pstr, int count)
 	if(!pDev ) return false;
 	wxMutexLocker ml(*(pDev->itBusLocker->second->pmtx));
 	//wxMutexLocker mlDev(pDev->locker);
-	bool rc = pDev->read(pstr, count);
+	bool rc = makeRead(TID, pDev,  pstr,count);
 	return rc;
 };
+
+inline bool HandlerBroker::makeRead(MyThread * TID, DevDesc*pDev,  std::string* pstr, int iToRead){
+	bool rc;
+	int iRed = 0;
+	if (iToRead == 0) iToRead = 1024;
+	int count = iToRead = iToRead<1024?iToRead:1024;
+
+	std::string strError;
+	wxStopWatch sw;
+	do{
+		strError.clear();
+		rc = pDev->read(pstr, &strError, count);
+		if(!rc || !strError.empty()){
+			wxLogError(wxString::FromUTF8(strError.c_str()));
+			return false;
+		}
+		iRed = pstr->length();
+		/*if ((pstr->find(pDev->getTerm()) != std::string::npos)
+		||	sw.Time() > pDev->readTimeout()) break;
+		*/
+		std::string term = pDev->getTerm();
+		if ((pstr->find(pDev->getTerm()) != std::string::npos)) break;
+		if(sw.Time() > pDev->readTimeout()) break;
+		if (TID->TestDestroy()) return false;
+		TID->Sleep(100);	
+	}while(iToRead);
+	return true;
+	
+}
 
 void HandlerBroker::unlock(MyThread * , DEVID ){
 	return ;
@@ -189,7 +218,9 @@ DevDesc::DevDesc(DevInterface *inpD, HandlerLibData*inpHLD):
 	{
 	};
 DevDesc::~DevDesc(){ 
-	delete d;/*
+	wxLogError("Deleting d");
+	delete d;
+	/*
 	if (semFreeMutexes->TryWait() ==  wxSEMA_BUSY ){
 		delete &locker;
 		delete semFreeMutexes;

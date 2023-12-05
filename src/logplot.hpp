@@ -39,6 +39,7 @@ class LogPlot: public Logger{
 	wxIPV4address server;
 	//std::vector<std::string> *splitString(const std::string& sInput, char token);
 	static int setLabel (Logger *l,const std::string& );
+	static int setTitle (Logger *l,const std::string& );
 	static int setColour (Logger *l,const std::string& );
 	static int attach (Logger *l,const std::string& );
 	public:

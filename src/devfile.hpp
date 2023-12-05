@@ -67,7 +67,7 @@ class DevFile: public DevInterface{
 		 return rc;
 	};  
 
-	virtual bool read(std::string*str, int count) {
+	virtual bool read(std::string*str, std::string *err, int count) {
 		if (count == 0) count = 1024;
 		count = count<1024?count:1024;
 

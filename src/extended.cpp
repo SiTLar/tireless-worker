@@ -15,7 +15,7 @@ extern "C" {
 #include "logplot.hpp"
 //#include "devlcard.hpp"
 #include "com.hpp"
-
+#include "devgpib.hpp"
 
 extern "C"{
 #include <stdio.h>
@@ -37,6 +37,7 @@ void dynLoad(std::map<std::string,DevInterface*> *inpDev, std::map<std::string,L
 void fnGenDevs(void){
 		(*pDevList)[std::string("SERIAL")] = new DevSerial();
 		(*pDevList)[std::string("NULL")] = new DevSerial();
+		(*pDevList)[std::string("IEEE488")] = new DevGPIB();
 		//(*pDevList)[std::string("LCARD")] = new DevLCard();
 		(*pLogList)[std::string("PLOT")] = new LogPlot();
 

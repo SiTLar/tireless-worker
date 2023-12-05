@@ -19,7 +19,6 @@ extern "C"{
 #include <windows.h>
 #include <commctrl.h>
 }
-#include "tools.hpp"
 std::string DevSerial::makeUniqueDev(const std::string& strInit) const {
 	return makeBusLock(strInit);
 }
@@ -156,9 +155,9 @@ bool DevSerial::connect(const std::string& strInit) {
 	wxLogDebug( wxString::Format(wxT("COM stage #%d SetCommState OK"), iStage++));
 	COMMTIMEOUTS timeouts = {0};
 
-	timeouts.ReadIntervalTimeout = ULONG_MAX; 
-	//timeouts.ReadTotalTimeoutMultiplier = 500; 
-	timeouts.ReadTotalTimeoutConstant = 2000;
+	timeouts.ReadIntervalTimeout = 0; 
+	timeouts.ReadTotalTimeoutMultiplier = 0; 
+	timeouts.ReadTotalTimeoutConstant = 0;
 	timeouts.WriteTotalTimeoutConstant = 200; 
 	if(!SetCommTimeouts(handle, &timeouts)) {
 		PurgeComm(handle,  PURGE_TXABORT | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_RXCLEAR );
@@ -173,16 +172,16 @@ bool DevSerial::connect(const std::string& strInit) {
 bool DevSerial::attribute(Attr* pAttrStr){
 
 	do{
-		wxString sAttr = wxString::FromUTF8(pAttrStr->Attr_ID->strptr, pAttrStr->Attr_ID->strlength );
-		wxString sVal = wxString::FromUTF8(pAttrStr->Attr_VAL->strptr,pAttrStr->Attr_VAL->strlength) ;
-		if (sAttr.IsEmpty() && sVal.IsEmpty())return false;
-		std::map<wxString, bool (*) ( DevSerial*,const  wxString &), IcaseCmp>::iterator it (mapAttr.find(sAttr));
+		std::string sAttr = std::string(pAttrStr->Attr_ID->strptr, pAttrStr->Attr_ID->strlength );
+		std::string sVal = std::string(pAttrStr->Attr_VAL->strptr,pAttrStr->Attr_VAL->strlength) ;
+		if (sAttr.empty() && sVal.empty())return false;
+		std::map<std::string, bool (*) ( DevSerial*,const  wxString &), IcaseCmp>::iterator it (mapAttr.find(sAttr));
 		if(it == mapAttr.end()) return false;
-		wxLogDebug(wxT("DevAttrib:")+sAttr+wxT("|")+sVal); 
-		if(!it->second(this, sVal)) return false;
+		wxString wxsVal = wxString::FromUTF8(pAttrStr->Attr_VAL->strptr,pAttrStr->Attr_VAL->strlength) ;
+		if(!it->second(this, wxsVal)) return false;
 		pAttrStr = pAttrStr->next;
 	}while(pAttrStr);
-
+	
 	return true;
 
 };
@@ -359,18 +358,18 @@ static bool DevSerial::setWriteTimeout(DevSerial *o, const wxString &str){
 	timeouts.WriteTotalTimeoutConstant = ulTimeout; 
 	return SetCommTimeouts(o->handle, &timeouts);
 }
-std::map<wxString, bool (*) ( DevSerial*, const wxString&), IcaseCmp > DevSerial::mapAttr;
+std::map<std::string, bool (*) ( DevSerial*, const wxString&), IcaseCmp > DevSerial::mapAttr;
 DevSerial::DevSerial(): DevInterface(), handle(INVALID_HANDLE_VALUE){
  sTerm=(wxString(wxT("\x0d\x0a"))); sOTerm = (wxString(wxT("\x0d\x0a")));
-	mapAttr[wxString(wxT("BAUD_RATE"))] =  &setBaud;
-	mapAttr[wxString(wxT("STOP_BITS"))] =  &setStopBits;
-	mapAttr[wxString(wxT("PARITY"))] =  &setParity;
-	mapAttr[wxString(wxT("DATA_BITS"))] =  &setDataBits;
-	mapAttr[wxString(wxT("TERMINATOR"))] =  &setTerm;
-	mapAttr[wxString(wxT("NO_TERMINATOR"))] =  &setNoTerm;
-	mapAttr[wxString(wxT("OUT_TERMINATOR"))] =  &setOTerm;
-	mapAttr[wxString(wxT("WRITE_TIMEOUT"))] =  &setWriteTimeout;
-	mapAttr[wxString(wxT("READ_TIMEOUT"))] =  &setReadTimeout;
-	mapAttr[wxString(wxT("TIMEOUT"))] =  &setReadTimeout;
+	mapAttr[std::string("BAUD_RATE")] =  &setBaud;
+	mapAttr[std::string("STOP_BITS")] =  &setStopBits;
+	mapAttr[std::string("PARITY")] =  &setParity;
+	mapAttr[std::string("DATA_BITS")] =  &setDataBits;
+	mapAttr[std::string("TERMINATOR")] =  &setTerm;
+	mapAttr[std::string("NO_TERMINATOR")] =  &setNoTerm;
+	mapAttr[std::string("OUT_TERMINATOR")] =  &setOTerm;
+	mapAttr[std::string("WRITE_TIMEOUT")] =  &setWriteTimeout;
+	mapAttr[std::string("READ_TIMEOUT")] =  &setReadTimeout;
+	mapAttr[std::string("TIMEOUT")] =  &setReadTimeout;
 }
 

@@ -30,7 +30,9 @@
 #include "logplotpr.hpp"
 #include "mathplot.h"
 // #include <time.h>
-
+extern "C"{
+#include <stdio.h>
+}
 // Memory leak debugging
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -74,7 +76,7 @@ BEGIN_EVENT_TABLE(PlotFrame,wxFrame)
 	EVT_MENU(ID_QUIT,  PlotFrame::OnQuit)
 	EVT_MENU(ID_PRINT_PREVIEW, PlotFrame::OnPrintPreview)
 	EVT_MENU(ID_PRINT, PlotFrame::OnPrint)
-	EVT_MENU(mpID_FIT, PlotFrame::OnFit)
+	    EVT_MENU( mpID_FIT,       PlotFrame::OnFit)
 	EVT_MENU(ID_ALIGN_X_AXIS, PlotFrame::OnAlignXAxis)
 	EVT_MENU(ID_ALIGN_Y_AXIS, PlotFrame::OnAlignYAxis)
 	EVT_MENU(ID_TOGGLE_GRID, PlotFrame::OnToggleGrid)
@@ -87,7 +89,9 @@ END_EVENT_TABLE()
 
 	//PlotFrame::~PlotFrame(){owner->frameKilled(owner);};
 PlotFrame::PlotFrame(SharedP<PlotFrame*>&_myTail)
-	: wxFrame( (wxFrame *)NULL, -1, wxT("Tireless Worker diagram"), wxDefaultPosition, wxSize(500, 500)), myTail(_myTail){
+	: wxFrame( (wxFrame *)NULL, -1, wxT("Tireless Worker diagram"), wxDefaultPosition, wxSize(500, 500)), myTail(_myTail), m_bFit(true){
+
+
 		wxMenu *file_menu = new wxMenu();
 		wxMenu *view_menu = new wxMenu();
 
@@ -156,20 +160,29 @@ PlotFrame::PlotFrame(SharedP<PlotFrame*>&_myTail)
 		// m_plot->EnableCoordTooltip(true);
 		// set a nice pen for the lissajoux
 
-		m_log = new wxTextCtrl( this, -1, wxT("This is the log window.\n"), wxPoint(0,0), wxSize(100,100), wxTE_MULTILINE );
-		wxLog *old_log = wxLog::SetActiveTarget( new wxLogTextCtrl( m_log ) );
-		delete old_log;
 
 		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
 
 		topsizer->Add( m_plot, 1, wxEXPAND );
-		topsizer->Add( m_log, 0, wxEXPAND );
 
 		SetAutoLayout( TRUE );
 		SetSizer( topsizer );
 		axesPos[0] = 0;
 		axesPos[1] = 0;
 		ticks = true;
+
+		ehFitHook = new wxEvtHandler();
+		ehFitHook->Connect(mpID_FIT,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOn), NULL, this);
+		ehFitHook->Connect(mpID_ZOOM_IN,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOff), NULL, this);
+		ehFitHook->Connect(mpID_CENTER,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOff), NULL, this);
+		ehFitHook->Connect(mpID_ZOOM_OUT,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOff), NULL, this);
+		ehFitHook->Connect(mpID_LOCKASPECT,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOff), NULL, this); 
+		ehFitHook->Connect(wxEVT_RIGHT_DOWN, wxCommandEventHandler(PlotFrame::FitOff), NULL, this);
+		ehFitHook->Connect(wxEVT_LEFT_DOWN, wxCommandEventHandler(PlotFrame::FitOff), NULL, this);
+
+	
+		//PushEventHandler(ehFitHook);
+		m_plot->PushEventHandler(ehFitHook);
 
 		m_plot->EnableDoubleBuffer(true);
 		m_plot->SetMPScrollbars(false);
@@ -182,7 +195,7 @@ PlotFrame::PlotFrame(SharedP<PlotFrame*>&_myTail)
 	}
 void PlotFrame::redraw(){
 	m_plot->UpdateAll();
-	m_plot->Fit();
+	if(m_bFit)m_plot->Fit();
 	Refresh();
 
 
@@ -203,9 +216,9 @@ void PlotFrame::OnQuit( wxCommandEvent &WXUNUSED(event) ) {
 
 void PlotFrame::OnFit( wxCommandEvent &WXUNUSED(event) )
 {
+	m_bFit = true;
 	m_plot->Fit();
 }
-
 void PlotFrame::OnAbout( wxCommandEvent &WXUNUSED(event) )
 {
 	wxMessageBox( wxT("Tireless Worker graphical logging utility.\nBased on wxWidgets mathplot sample\n(c) 2003 David Schalig\n(c) 2007-2009 Davide Rondini and wxMathPlot team"));
@@ -216,7 +229,6 @@ void PlotFrame::OnAlignXAxis( wxCommandEvent &WXUNUSED(event) )
 	axesPos[0] = (int) (axesPos[0]+1)%5;
 	wxString temp;
 	temp.sprintf(wxT("axesPos = %d\n"), axesPos);
-	m_log->AppendText(temp);
 	mpScaleX* xaxis = ((mpScaleX*)(m_plot->GetLayer(0)));
 	mpScaleY* yaxis = ((mpScaleY*)(m_plot->GetLayer(1)));
 	if (axesPos[0] == 0) {
@@ -256,7 +268,6 @@ void PlotFrame::OnAlignYAxis( wxCommandEvent &WXUNUSED(event) )
 	axesPos[1] = (int) (axesPos[1]+1)%5;
 	wxString temp;
 	temp.sprintf(wxT("axesPos = %d\n"), axesPos);
-	m_log->AppendText(temp);
 	mpScaleX* xaxis = ((mpScaleX*)(m_plot->GetLayer(0)));
 	mpScaleY* yaxis = ((mpScaleY*)(m_plot->GetLayer(1)));
 	if (axesPos[1] == 0) {
@@ -362,6 +373,15 @@ void PlotFrame::OnSaveScreenshot(wxCommandEvent& event)
 	}
 	event.Skip();
 }
+void PlotFrame::FitOn(wxCommandEvent& evt){
+	m_bFit = true;
+	evt.Skip(true);
+}
+void PlotFrame::FitOff(wxCommandEvent& evt){
+	m_bFit = false;
+	evt.Skip(true);
+}
+
 
 void LPApp::OnSockInput(wxSocketEvent& evt ) {
 
@@ -409,6 +429,14 @@ void LPApp::OnSockInput(wxSocketEvent& evt ) {
 
 			break;
 
+		case 'T':
+			if (pSockServer->LastCount() == sizeof(LPString)){
+				it = mapGH.find(GraphHead(data.S.ulTID,data.S.ulLID));
+				if (it == mapGH.end()) 
+					it = mapGH.insert(std::make_pair(GraphHead(data.S.ulTID,data.S.ulLID),GraphHandler())).first;
+				it->second.setTitle(data.S.length, data.S.str);
+			}
+			break;
 		case 'L':
 			if (pSockServer->LastCount() == sizeof(LPString)){
 				it = mapGH.find(GraphHead(data.S.ulTID,data.S.ulLID));
@@ -458,12 +486,15 @@ void GraphHandler::init(){
 		(*ppFrame)->Show(true);
 		(*ppFrame)->addPlot(*ppFxys);
 	};
+	if(!m_sTitle.IsEmpty())
+		(*ppFrame)->SetTitle(m_sTitle);
+
+
 }
 //GraphHandler::~GraphHandler(){ --tail;}
 void GraphHandler::addData(double x, double y) {
 
 	init();
-
 	(*ppFxys)->addData(x,y);
 	(*ppFrame)->redraw();
 };
@@ -478,6 +509,12 @@ void GraphHandler::attach(GraphHandler&inp) {
 	(*ppFrame)->Show(true);
 	(*ppFrame)->addPlot(*ppFxys);
 }
+void GraphHandler::setTitle(int len, char * str) {
+
+	m_sTitle = wxString::FromUTF8(str, len);
+	init();
+
+};
 void GraphHandler::setLabel(int len, char * str) {
 
 	init();

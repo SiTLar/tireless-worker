@@ -4,6 +4,8 @@
 #include <wx/regex.h>
 #include <wx/filename.h>
 
+#include <wx/log.h>
+
 extern "C"{
 #include <string.h>
 #include "defines.h"
@@ -39,30 +41,30 @@ struct delete_it: public std::unary_function< Type , void > {
 
 void MyThread::OnExit(){
 	wxCommandEvent event( wxEVT_USER_FIRST, elTHREAD_LIFECYCLE );
-::wxLogDebug( wxT("%d: %s sName=%s"), myID, wxT(" event ready"), sName);
+//::wxLogDebug( wxT("%d: %s sName=%s"), myID, wxT(" event ready"), sName.c_str());
 	//event.SetClientData(GetId());
 	event.SetClientData(static_cast<void*>(new ThreadMsg(myID, sName)));
-::wxLogDebug( wxT("%d: %s"), myID, wxT(" client data ready"));
+//::wxLogDebug( wxT("%d: %s"), myID, wxT(" client data ready"));
 		vciMailingList.erase(myID);
-	::wxLogDebug( wxT("%d: %s"), myID, wxT(" vciMailingList.erase(myID);"));
+//	::wxLogDebug( wxT("%d: %s"), myID, wxT(" vciMailingList.erase(myID);"));
 	
 	{
 		wxMutexLocker ml(mtxTaskList);
 		TaskList.erase(itTList);
 	}
-::wxLogDebug( wxT("%d: %s"),  myID,wxT(" TaskList.erase(itTList);"));
+//::wxLogDebug( wxT("%d: %s"),  myID,wxT(" TaskList.erase(itTList);"));
 	fGetHBroker()->remove(this);	
 	std::for_each(logs->begin(), logs->end(), delete_it_pair<LogDesc *>());
 
-::wxLogDebug( wxT("%d: %s"),  myID,wxT(" logs deleted"));
+//::wxLogDebug( wxT("%d: %s"),  myID,wxT(" logs deleted"));
 	delete logs;
 	{
 		wxMutexLocker ml(mtxMail);
 		std::for_each(lstMail.begin(), lstMail.end(), delete_it<wxString *>());
 	}
-::wxLogDebug( wxT("%d: %s"), myID, wxT(" mail deleted"));
+//::wxLogDebug( wxT("%d: %s"), myID, wxT(" mail deleted"));
 wxPostEvent( m_parent, event );
-::wxLogDebug( wxT("%d: %s"), myID, wxT(" event sent "));
+//::wxLogDebug( wxT("%d: %s"), myID, wxT(" event sent "));
 	//delete psRunningScript;
 }
 void MyThread::setID(unsigned long inp) {
@@ -225,8 +227,8 @@ APIRET APIENTRY rfDevRead( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_TYPE
 //		wxMessageBox(wxString::Format(wxT("count=%d"), count));
 	
 	if(!fGetHBroker()->read(glData.pthr, devid, &strInbuf, count )) strInbuf= "ERROR";
-	wxLogDebug( wxT("DevRead: error waiting for a semaphore"));
-	wxLogDebug( wxT("DevRead: reader thread killed"));
+	//wxLogDebug( wxT("DevRead: error waiting for a semaphore"));
+	//wxLogDebug( wxT("DevRead: reader thread killed"));
 	//wxMessageBox(inbuf);
 	//wxMessageBox(wxString::Format(wxT("buflen=%d"), strlen(inbuf.mb_str(wxConvUTF8))));
 	
@@ -335,6 +337,7 @@ APIRET APIENTRY rfChkTerminte( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_
 	USHORT   query_flag;          /* flag for handler query     */
 //	SHORT sCBRetFlag;
 	ULONG rc = 0;
+	char *pcEnd;
 	double dSleeptime;
 	unsigned long iSleeptime, ulLTimeQuant = ulTimeQuant;
 //	char cOut[120] = {0};
@@ -343,7 +346,11 @@ APIRET APIENTRY rfChkTerminte( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_
 	RexxQueryExit("sayHandler", NULL, &query_flag, glData.user_info);
 	if ( my_checkparam( NULL, (char *)name, argc, 1, 1 ) ) return 1;
 	//return 0;
-	if(!wxString::FromUTF8(argv[0].strptr, argv[0].strlength).ToDouble(&dSleeptime)) return 1;
+	//if(!wxString::FromUTF8(argv[0].strptr, argv[0].strlength).ToDouble(&dSleeptime)) return 1;
+	pcEnd =argv[0].strptr + argv[0].strlength;
+	dSleeptime = strtod(argv[0].strptr,&pcEnd);
+	//::wxLogDebug(wxT("|%s:%e|\n"),wxString::FromUTF8(argv[0].strptr, argv[0].strlength).c_str(),dSleeptime);
+	if (pcEnd == argv[0].strptr)return 1;
 	iSleeptime = static_cast<unsigned long>(dSleeptime *1000);
 	for (;iSleeptime > ulLTimeQuant; iSleeptime -= ulLTimeQuant){
 		glData.pthr->Sleep(ulLTimeQuant);
@@ -490,16 +497,16 @@ APIRET APIENTRY rfNewTask( RFH_ARG0_TYPE name, RFH_ARG1_TYPE argc, RFH_ARG2_TYPE
 	if ( my_checkparam( NULL, (char *)name, argc, 1, 1 ) ) return -1;
 	RexxQueryExit("sayHandler", NULL, &query_flag, glData.user_info);
 	wxFileName fnCScript(glData.pthr->sFullName);
-	::wxLogDebug((glData.pthr->sFullName + wxT(" is starting ") + (fnCScript.GetPath()+wxFileName::GetPathSeparator() + wxString::FromUTF8(argv[0].strptr, argv[0].strlength))).c_str());;
+	//::wxLogDebug((glData.pthr->sFullName + wxT(" is starting ") + (fnCScript.GetPath()+wxFileName::GetPathSeparator() + wxString::FromUTF8(argv[0].strptr, argv[0].strlength))).c_str());;
 	NewTaskReq * newtask = new NewTaskReq (glData.pthr->getID(), new wxString(fnCScript.GetPath()+wxFileName::GetPathSeparator() + wxString::FromUTF8(argv[0].strptr, argv[0].strlength)));
 	wxCommandEvent event( wxEVT_USER_FIRST, NEW_TASK );
 	event.SetClientData(newtask);
 	; 
 	wxPostEvent(glData.pthr->m_parent , event );
-	::wxLogDebug((glData.pthr->sFullName + wxT(" event sent")).c_str());
+	//::wxLogDebug((glData.pthr->sFullName + wxT(" event sent")).c_str());
 	if (newtask->ready.WaitTimeout(5000) != wxSEMA_NO_ERROR ) return RxReturnNumber(NULL, retstr, -1);
 	delete newtask;
-	::wxLogDebug((glData.pthr->sFullName + wxT(" all OK")).c_str());
+	//::wxLogDebug((glData.pthr->sFullName + wxT(" all OK")).c_str());
 	return RxReturnNumber(NULL, retstr, newtask->TID);
 }
 /*
@@ -757,7 +764,7 @@ long fRunScript(wxString &sOutput, MyThread *m_thread, wxString &sScript ){
 			&rc_short,		// converted return code
 			&retstr);	// returned result
 
-	::wxLogDebug((glData.pthr->sFullName + wxT(" RexxStart done")).c_str());
+	//::wxLogDebug((glData.pthr->sFullName + wxT(" RexxStart done")).c_str());
 	//m_thread->Sleep(10000);
 	Instore[0].strlength = 8;
 	//wxMessageBox(wxString::FromUTF8(Instore[1].strptr,Instore[1].strlength));
@@ -765,10 +772,10 @@ long fRunScript(wxString &sOutput, MyThread *m_thread, wxString &sScript ){
 	RexxFreeMemory(Instore[1].strptr);
 	RexxDeregisterExit("sayHandler", NULL);
 	funcs = rfMainArray;
-	::wxLogDebug((glData.pthr->sFullName + wxT(" rexx memory freed")).c_str());
+	//::wxLogDebug((glData.pthr->sFullName + wxT(" rexx memory freed")).c_str());
 	do RexxDeregisterFunction(funcs->first); 
 	while((++funcs)->first);
-	::wxLogDebug((glData.pthr->sFullName + wxT(" rexx functions dereged")).c_str());
+	//::wxLogDebug((glData.pthr->sFullName + wxT(" rexx functions dereged")).c_str());
 	sOutput << wxString::FromUTF8(retstr.strptr,retstr.strlength);
 	return rc;
 }

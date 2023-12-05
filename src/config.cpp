@@ -12,6 +12,8 @@
 #include <wx/propgrid/propgrid.h>
 #include <wx/propgrid/manager.h>
 #include <wx/propgrid/advprops.h>
+#include <wx/regex.h>
+#include <cstdio>
 #include <set>
 #include <map>
 #include <algorithm>
@@ -27,6 +29,14 @@
 extern InternalConfigStuct strIntConf;
 extern unsigned long ulTimeQuant;
 extern char pczConfigName[]; 
+void xmlLog(wxXmlNode *inp, wxString message = wxEmptyString){
+	wxXmlDocument xmlTmp;
+	xmlTmp.SetRoot(new wxXmlNode(*inp));
+	wxString strTmpFName = wxString::FromUTF8(tmpnam(NULL));
+	wxLogError(wxT("xmlLog: ")+message+wxT(" ")+strTmpFName);
+	xmlTmp.Save(strTmpFName);
+
+}
 
 struct InsertPG : public std::unary_function<PageData&, void>{
 	wxFlatNotebook *pNB;
@@ -51,7 +61,6 @@ dlgConfig::dlgConfig( wxWindow* parent, wxXmlNode *oConfig,  const wxString& tit
 
 	wxBoxSizer* mainSizer;
 	mainSizer = new wxBoxSizer( wxVERTICAL );
-
 	m_flatNotebook1 = new wxFlatNotebook(this, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxFNB_COLORFUL_TABS|wxFNB_FF2|wxFNB_NODRAG|wxFNB_NO_NAV_BUTTONS|wxFNB_NO_X_BUTTON|wxFNB_VC8, wxT("configurator"));
 
 	m_flatNotebook1->SetCustomizeOptions( 0 );
@@ -82,7 +91,9 @@ dlgConfig::dlgConfig( wxWindow* parent, wxXmlNode *oConfig,  const wxString& tit
 	pHH->applyConfig();
 	if (oConfig->GetChildren())
 		loadConfig(oConfig->GetChildren());
+//	wxMessageBox(wxT("kuku"));
 	Connect(wxID_ANY, wxEVT_PG_SELECTED, wxPropertyGridEventHandler(dlgConfig::onPropSel));
+//	wxMessageBox(wxT("kuku"));
 }
 
 dlgConfig::~dlgConfig()
@@ -99,7 +110,8 @@ HandlersHome::HandlersHome(wxFlatNotebook*m_flatNotebook1 ): wxPanel( m_flatNote
 	sbSizer4 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Description") ), wxVERTICAL );
 	sbSizer4->Add( pText, 1, wxALL|wxEXPAND, 5 );
 	panelSizer = new wxBoxSizer( wxVERTICAL );
-	panelSizer->Add( m_scrolledWindow2, 3, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
+//	panelSizer->Add( m_scrolledWindow2, 3, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
+	panelSizer->Add( m_scrolledWindow2, 3, wxALL|wxEXPAND, 5 );
 	panelSizer->Add( sbSizer4, 1, wxEXPAND, 5 );
 	panelSizer->FitInside( this);
 	SetSizer( panelSizer );
@@ -144,8 +156,11 @@ void HandlerLibPanel::applyConfig (std::map<wxString,TypeFlag> &mapConf, Handler
 PageData::PageData(const wxString &inName, wxFlatNotebook*m_flatNotebook1 ): sName(inName){
 	pPanel = new wxPanel( m_flatNotebook1, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), 0 );
 	wxBoxSizer* panelSizer = new wxBoxSizer( wxVERTICAL );
-	pPG = new wxPropertyGrid(pPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER);
-	panelSizer->Add( pPG, 3, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
+ wxPGInitResourceModule();
+//	pPG = new wxPropertyGrid(pPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER);
+	pPG = new wxPropertyGrid(pPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPG_BOLD_MODIFIED|wxPG_TOOLTIPS|wxPG_SPLITTER_AUTO_CENTER);
+	//panelSizer->Add( pPG, 3, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
+	panelSizer->Add( pPG, 3, wxALL|wxEXPAND, 5 );
 	wxStaticBoxSizer* sbSizer4 = new wxStaticBoxSizer( new wxStaticBox( pPanel, wxID_ANY, wxT("Description") ), wxVERTICAL );
 	pText = new wxStaticText( pPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
 	pText->Wrap( -1 );
@@ -159,24 +174,29 @@ PageData::PageData(const wxString &inName, wxFlatNotebook*m_flatNotebook1 ): sNa
 void MyFrame::writeDefaultCfg(wxString &sPath){
 	wxFile fileCfg(sPath, wxFile::write);
 	if(!fileCfg.IsOpened()){
-		strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() + /*wxT("twconfig.xmz")*/ +wxString(pczConfigName, wxConvUTF8) ;
+		strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator()  /*wxT("twconfig.xmz")*/ +wxString(pczConfigName, wxConvUTF8) ;
 		fileCfg.Open(strIntConf.sCfgFilePath, wxFile::write);
 	}
 	wxFileOutputStream fstream(fileCfg);
 	wxZlibOutputStream(fstream).Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
-	//fstream.Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
+//	fstream.Write(pcDefaultCfgFile, sizeof(pcDefaultCfgFile)-1);
 };
 
 void MyFrame::loadCfg(){
+	//wxLogError(wxT("loadcfg"));
 	m_toolBar1->ClearTools();
 
 
 	wxXmlDocument xmlProgCfg;
 	strIntConf.sCfgFilePath = wxStandardPaths::Get().GetUserConfigDir()+ wxFileName::GetPathSeparator() /*+wxT("twconfig.xmz")*/+wxString(pczConfigName, wxConvUTF8)  ;
 
+//wxLogError(strIntConf.sCfgFilePath);
 	wxFileInputStream fstream(strIntConf.sCfgFilePath);
 	wxZlibInputStream zstream(fstream);
+	//if(wxFileName::FileExists(strIntConf.sCfgFilePath)) xmlProgCfg.Load(fstream);
 	if(wxFileName::FileExists(strIntConf.sCfgFilePath)) xmlProgCfg.Load(zstream);
+	else wxLogError(wxT("File not found ")+ wxString::FromUTF8(strIntConf.sCfgFilePath));
+
 	if(!xmlProgCfg.IsOk()){
 		wxMessageBox(wxT("Configuration file is corrupted.\n\n Writing blanck configuration file:\n")
 				+strIntConf.sCfgFilePath , wxT("Configuration Error"),wxICON_EXCLAMATION );
@@ -184,6 +204,7 @@ void MyFrame::loadCfg(){
 		wxFileInputStream fdefstream(strIntConf.sCfgFilePath);
 		wxZlibInputStream zdefstream(fdefstream);
 		xmlProgCfg.Load(zdefstream);
+	//	xmlProgCfg.Load(fdefstream);
 	}
 	//xmlProgCfg.SetFileEncoding(wxT("utf8"));
 	wxXmlNode *pcNode = xmlProgCfg.GetRoot()->GetChildren();
@@ -191,16 +212,18 @@ void MyFrame::loadCfg(){
 		if(pcNode->GetName() == wxT("config")){
 			oConfig = new wxXmlNode(*pcNode);
 			oConfig->SetType(wxXML_ELEMENT_NODE);
+			break;
 		}
 		pcNode = pcNode->GetNext();
 	}
 
 	processCfg();
+	//xmlLog(oConfig,wxT("after processCfg"));
 
 	pcNode = xmlProgCfg.GetRoot()->GetChildren();
 
 	while(pcNode){
-		wxXmlProperty *pcProperty ;
+		wxXmlAttribute *pcAttribute ;
 		unsigned long count;
 		wxString sCNodeName = pcNode->GetName();
 		if(sCNodeName == wxT("tools")){
@@ -209,13 +232,13 @@ void MyFrame::loadCfg(){
 			wxString sPath, sLable, sImage(wxEmptyString);
 			wxXmlNode *toolNode = pcNode->GetChildren(); 
 			while(toolNode && count--){
-				pcProperty = toolNode->GetProperties();
-				while(pcProperty){
-					if (pcProperty->GetName() == wxT("path")) sPath= pcProperty->GetValue();
-					else if (pcProperty->GetName() == wxT("descr")) sLable = pcProperty->GetValue();
-					else if (pcProperty->GetName() == wxT("pos")) pcProperty->GetValue().ToULong(&ulPos);
-					else if (pcProperty->GetName() == wxT("image")) sImage = pcProperty->GetValue();
-					pcProperty = pcProperty->GetNext();
+				pcAttribute = toolNode->GetAttributes();
+				while(pcAttribute){
+					if (pcAttribute->GetName() == wxT("path")) sPath= pcAttribute->GetValue();
+					else if (pcAttribute->GetName() == wxT("descr")) sLable = pcAttribute->GetValue();
+					else if (pcAttribute->GetName() == wxT("pos")) pcAttribute->GetValue().ToULong(&ulPos);
+					else if (pcAttribute->GetName() == wxT("image")) sImage = pcAttribute->GetValue();
+					pcAttribute = pcAttribute->GetNext();
 				}
 				if(!sPath.IsEmpty()/* && !sLable.IsEmpty()*/){
 					wxBitmap  bmp(broken_xpm);
@@ -237,13 +260,13 @@ void MyFrame::loadCfg(){
 			count = strIntConf.ulMaxMenuTasks;
 			long iPos = -1, id = 0;
 			while(menuNode && count--){
-				pcProperty = menuNode->GetProperties();
-				while(pcProperty){
-					if (pcProperty->GetName() == wxT("path")) sPath = pcProperty->GetValue();
-					else if (pcProperty->GetName() == wxT("name")) sName = pcProperty->GetValue();
-					else if (pcProperty->GetName() == wxT("id"))  pcProperty->GetValue().ToLong(&id);
-					else if (pcProperty->GetName() == wxT("pos"))  pcProperty->GetValue().ToLong(&iPos);
-					pcProperty = pcProperty->GetNext();
+				pcAttribute = menuNode->GetAttributes();
+				while(pcAttribute){
+					if (pcAttribute->GetName() == wxT("path")) sPath = pcAttribute->GetValue();
+					else if (pcAttribute->GetName() == wxT("name")) sName = pcAttribute->GetValue();
+					else if (pcAttribute->GetName() == wxT("id"))  pcAttribute->GetValue().ToLong(&id);
+					else if (pcAttribute->GetName() == wxT("pos"))  pcAttribute->GetValue().ToLong(&iPos);
+					pcAttribute = pcAttribute->GetNext();
 				}
 				if(!sName.IsEmpty() && !sPath.IsEmpty() && id){
 					miNewItem = new wxMenuItem( m_menu11, id, sName, sPath, wxITEM_NORMAL );
@@ -270,7 +293,7 @@ void MyFrame::loadCfg(){
 					}
 					typeNode = typeNode->GetNext();
 				}
-				strIntConf.mapHandlersToUse[handlerLibNode->GetPropVal(wxT("md5"), wxT("error"))] = mapToUse;
+				strIntConf.mapHandlersToUse[handlerLibNode->GetAttribute(wxT("md5"), wxT("error"))] = mapToUse;
 				handlerLibNode = handlerLibNode->GetNext();
 			}
 
@@ -295,39 +318,39 @@ void MyFrame::processCfg(){
 			while(pcNode){
 				pcNode->SetType(wxXML_ELEMENT_NODE);
 				if(pcNode->GetName() == wxT("home")){
-					strIntConf.sHomeDir = pcNode->GetPropVal(wxT("value"), wxEmptyString);
+					strIntConf.sHomeDir = pcNode->GetAttribute(wxT("value"), wxEmptyString);
 					if (strIntConf.sHomeDir.IsEmpty()){
 						strIntConf.sHomeDir = wxStandardPaths::Get().GetDocumentsDir()+ wxFileName::GetPathSeparator() +wxT("TirelessWorker");
-						pcNode->DeleteProperty(wxT("value"));
-						pcNode->AddProperty(wxT("value"),strIntConf.sHomeDir); 
+						pcNode->DeleteAttribute(wxT("value"));
+						pcNode->AddAttribute(wxT("value"),strIntConf.sHomeDir); 
 					}
 				} else if(pcNode->GetName() == wxT("scripts")){
-					strIntConf.sScriptsDir = pcNode->GetPropVal(wxT("value"), wxEmptyString);
+					strIntConf.sScriptsDir = pcNode->GetAttribute(wxT("value"), wxEmptyString);
 					if (strIntConf.sScriptsDir.IsEmpty()){ 
 						strIntConf.sScriptsDir = strIntConf.sHomeDir+wxFileName::GetPathSeparator() + wxT("scripts");
-						pcNode->DeleteProperty(wxT("value"));
-						pcNode->AddProperty(wxT("value"),strIntConf.sScriptsDir);
+						pcNode->DeleteAttribute(wxT("value"));
+						pcNode->AddAttribute(wxT("value"),strIntConf.sScriptsDir);
 					}
 				}else if(pcNode->GetName() == wxT("handlers")){
-					strIntConf.sHandlersDir = pcNode->GetPropVal(wxT("value"), wxEmptyString);
+					strIntConf.sHandlersDir = pcNode->GetAttribute(wxT("value"), wxEmptyString);
 					if (strIntConf.sHandlersDir.IsEmpty()){ 
-						pcNode->DeleteProperty(wxT("value"));
+						pcNode->DeleteAttribute(wxT("value"));
 						strIntConf.sHandlersDir =  wxStandardPaths::Get().GetPluginsDir() +wxFileName::GetPathSeparator() + wxT("handlers");
-						pcNode->AddProperty(wxT("value"),strIntConf.sHandlersDir);
+						pcNode->AddAttribute(wxT("value"),strIntConf.sHandlersDir);
 					}
 				}else if(pcNode->GetName() == wxT("logs")){
-					strIntConf.sLogsDir = pcNode->GetPropVal(wxT("value"), wxEmptyString);
+					strIntConf.sLogsDir = pcNode->GetAttribute(wxT("value"), wxEmptyString);
 					if (strIntConf.sLogsDir.IsEmpty()){ 
-						pcNode->DeleteProperty(wxT("value"));
+						pcNode->DeleteAttribute(wxT("value"));
 						strIntConf.sLogsDir = strIntConf.sHomeDir+wxFileName::GetPathSeparator() + wxT("logs");
-						pcNode->AddProperty(wxT("value"),strIntConf.sLogsDir);
+						pcNode->AddAttribute(wxT("value"),strIntConf.sLogsDir);
 					}
 				}else if(pcNode->GetName() == wxT("res")){
-					strIntConf.sResDir = pcNode->GetPropVal(wxT("value"), wxEmptyString);
+					strIntConf.sResDir = pcNode->GetAttribute(wxT("value"), wxEmptyString);
 					if (strIntConf.sResDir.IsEmpty()){ 
 						strIntConf.sResDir =  wxStandardPaths::Get().GetResourcesDir() +wxFileName::GetPathSeparator() + wxT("res");
-						pcNode->DeleteProperty(wxT("value"));
-						pcNode->AddProperty(wxT("value"),strIntConf.sResDir );
+						pcNode->DeleteAttribute(wxT("value"));
+						pcNode->AddAttribute(wxT("value"),strIntConf.sResDir );
 					}
 				}
 				pcNode = pcNode->GetNext();
@@ -338,11 +361,11 @@ void MyFrame::processCfg(){
 			while(pcNode){
 				pcNode->SetType(wxXML_ELEMENT_NODE);
 				if(pcNode->GetName() == wxT("maxdynmenu"))
-					pcNode->GetPropVal(wxT("value"), wxEmptyString).ToULong(&strIntConf.ulMaxMenuTasks);
+					pcNode->GetAttribute(wxT("value"), wxEmptyString).ToULong(&strIntConf.ulMaxMenuTasks);
 				else if(pcNode->GetName() == wxT("maxtools"))
-					pcNode->GetPropVal(wxT("value"), wxEmptyString).ToULong(&strIntConf.ulMaxTools);
+					pcNode->GetAttribute(wxT("value"), wxEmptyString).ToULong(&strIntConf.ulMaxTools);
 				else if(pcNode->GetName() == wxT("timequant"))
-					pcNode->GetPropVal(wxT("value"), wxEmptyString).ToULong(&ulTimeQuant);
+					pcNode->GetAttribute(wxT("value"), wxEmptyString).ToULong(&ulTimeQuant);
 				pcNode = pcNode->GetNext();
 			}
 
@@ -386,31 +409,34 @@ struct SaveHandlerLibToXml : public std::unary_function<std::pair<const wxString
 		wxXmlNode* nodeLib = new wxXmlNode(node, wxXML_ELEMENT_NODE, wxT("library"));
 		wxXmlNode* nodeDevs = new wxXmlNode(nodeLib, wxXML_ELEMENT_NODE, wxT("devices"));
 		wxXmlNode* nodeLogs = new wxXmlNode(nodeLib, wxXML_ELEMENT_NODE, wxT("logs"));
-		nodeLib->AddProperty(new wxXmlProperty(wxT("md5"), inp.first));
+		nodeLib->AddAttribute(new wxXmlAttribute(wxT("md5"), inp.first));
 		std::for_each(inp.second.begin(), inp.second.end(),SaveHandlerToXml(nodeDevs, nodeLogs) );
 	}
 };
 
 void MyFrame::saveCfg(){
+	//wxLogError(wxT("savecfg"));
+//	xmlLog(oConfig,wxT("saving"));
 	wxXmlDocument xmlCfg;
 	wxString strImage;
 	wxXmlNode* nodeRoot = new wxXmlNode(wxXML_ELEMENT_NODE, wxT("root"));
 	wxXmlNode* node;
 
 	if(oConfig)nodeRoot->AddChild(new wxXmlNode(*oConfig));
+
 	wxXmlNode* nodeTools = new wxXmlNode(nodeRoot, wxXML_ELEMENT_NODE, wxT("tools"));
 	int iCTool = m_toolBar1->GetToolsCount();
 	while(iCTool){
 		node = new wxXmlNode(nodeTools, wxXML_ELEMENT_NODE, wxT("tool"));
-		node->AddProperty(new wxXmlProperty(wxT("path"),m_toolBar1->GetToolShortHelp(--iCTool + strIntConf.ulIDTools) ));
-		node->AddProperty(new wxXmlProperty(wxT("descr"), m_toolBar1->GetToolLongHelp(strIntConf.ulIDTools +iCTool)));
-		node->AddProperty(new wxXmlProperty(wxT("pos"), wxString::Format(wxT("%d"), iCTool)));
+		node->AddAttribute(new wxXmlAttribute(wxT("path"),m_toolBar1->GetToolShortHelp(--iCTool + strIntConf.ulIDTools) ));
+		node->AddAttribute(new wxXmlAttribute(wxT("descr"), m_toolBar1->GetToolLongHelp(strIntConf.ulIDTools +iCTool)));
+		node->AddAttribute(new wxXmlAttribute(wxT("pos"), wxString::Format(wxT("%d"), iCTool)));
 		wxToolBarToolBase* pTool = m_toolBar1->FindById(strIntConf.ulIDTools +iCTool);
 		if (pTool){
 			strImage.Empty();
 			wxStringOutputStream stream(&strImage);
 			pTool->GetBitmap().ConvertToImage().SaveFile(stream,wxBITMAP_TYPE_XPM );
-			node->AddProperty(new wxXmlProperty(wxT("image"), strImage));
+			node->AddAttribute(new wxXmlAttribute(wxT("image"), strImage));
 		}
 
 	}
@@ -421,10 +447,10 @@ void MyFrame::saveCfg(){
 	while(iCMenu){
 		node = new wxXmlNode(nodeMenus, wxXML_ELEMENT_NODE, wxT("menu"));
 		wxMenuItem* pCMenu = m_menu11->FindItemByPosition(--iCMenu); 
-		node->AddProperty(new wxXmlProperty(wxT("id"), wxString::Format(wxT("%d"), pCMenu->GetId())));
-		node->AddProperty(new wxXmlProperty(wxT("pos"), wxString::Format(wxT("%d"), iCMenu)));
-		node->AddProperty(new wxXmlProperty(wxT("path"), pCMenu->GetHelp()));
-		node->AddProperty(new wxXmlProperty(wxT("name"), pCMenu->GetItemLabelText()));
+		node->AddAttribute(new wxXmlAttribute(wxT("id"), wxString::Format(wxT("%d"), pCMenu->GetId())));
+		node->AddAttribute(new wxXmlAttribute(wxT("pos"), wxString::Format(wxT("%d"), iCMenu)));
+		node->AddAttribute(new wxXmlAttribute(wxT("path"), pCMenu->GetHelp()));
+		node->AddAttribute(new wxXmlAttribute(wxT("name"), pCMenu->GetItemLabelText()));
 		//nodeMenu->AddChild(node);
 	}
 
@@ -432,12 +458,12 @@ void MyFrame::saveCfg(){
 	wxXmlNode* nodeHandlers = new wxXmlNode(nodeRoot, wxXML_ELEMENT_NODE, wxT("Handlers"));
 
 	std::for_each(strIntConf.mapHandlersToUse.begin(), strIntConf.mapHandlersToUse.end(), SaveHandlerLibToXml(nodeHandlers));
-
 	xmlCfg.SetRoot(nodeRoot);
 	wxFileOutputStream fstream(strIntConf.sCfgFilePath);
 	wxZlibOutputStream zstream(fstream);
 	//wxFileOutputStream zstream(strIntConf.sCfgFilePath);
 	xmlCfg.Save(zstream);
+//	xmlCfg.Save(fstream);
 
 }
 void MyFrame::onConfig( wxCommandEvent& ){
@@ -456,19 +482,26 @@ void MyFrame::onConfig( wxCommandEvent& ){
 
 }
 
+
 struct GenConf : public std::unary_function<PageData&, void>{
 	wxXmlNode* parentNode;
 	GenConf(wxXmlNode*inp): parentNode(inp){};
 	void operator() ( const PageData& PD){
+		wxRegEx reType(wxT("wx([A-Za-z0-9]+)Property"));
 		wxXmlNode* rootNode= new wxXmlNode( parentNode, wxXML_ELEMENT_NODE, PD.sName);
 		wxPGVIterator pgIt = PD.pPG->GetVIterator(wxPG_ITERATE_ALL );
 		while(!pgIt.AtEnd()){
 			wxPGProperty * pgP = pgIt.GetProperty();
 			wxXmlNode* node = new wxXmlNode(rootNode, wxXML_ELEMENT_NODE, pgP->GetName());
-			node->AddProperty(new wxXmlProperty(wxT("type"), PD.pPG->GetPropertyShortClassName(pgP->GetId())));
-			node->AddProperty(new wxXmlProperty(wxT("value"),pgP->GetValueAsString()));
-			node->AddProperty(new wxXmlProperty(wxT("descr"),pgP->GetLabel()));
-			node->AddProperty(new wxXmlProperty(wxT("help"),pgP->GetHelpString()));
+			//node->AddAttribute(new wxXmlProperty(wxT("type"), GetPropertyShortClassName(pgP)));
+			//node->AddAttribute(new wxXmlAttribute(wxT("type"), pgP->GetValueType()));
+			reType.Matches(pgP->GetClassInfo()->GetClassName());
+			wxString sPropType = reType.GetMatch(pgP->GetClassInfo()->GetClassName(),1);
+			//wxLogError(wxT("Name: ")+sPropType);
+			node->AddAttribute(new wxXmlAttribute(wxT("type"), sPropType)); 
+			node->AddAttribute(new wxXmlAttribute(wxT("value"),pgP->GetValueAsString()));
+			node->AddAttribute(new wxXmlAttribute(wxT("descr"),pgP->GetLabel()));
+			node->AddAttribute(new wxXmlAttribute(wxT("help"),pgP->GetHelpString()));
 			pgIt.Next();
 		}
 	}
@@ -504,22 +537,22 @@ void dlgConfig::loadConfig(wxXmlNode* pcNode){
 }
 void dlgConfig::loadCGrid(wxPropertyGrid* pGrid, wxXmlNode* pcNode){
 	while(pcNode){
-		wxXmlProperty *pcProperty = pcNode->GetProperties(); wxXmlProperty *pcPrVal = 0;
+		wxXmlAttribute *pcAttribute = pcNode->GetAttributes(); wxXmlAttribute *pcPrVal = 0;
 		wxPGProperty * pGridProperty = 0;
 		wxString sLable, sValue, sHelp, sType;
-		while(pcProperty){
-			if (pcProperty->GetName() == wxT("help")) sHelp = pcProperty->GetValue();
-			else if (pcProperty->GetName() == wxT("descr")) sLable = pcProperty->GetValue();
-			else if (pcProperty->GetName() == wxT("value")){ 
-				sValue = pcProperty->GetValue();
-				pcPrVal = pcProperty;
-			}else if (pcProperty->GetName() == wxT("type")){
-				sType = pcProperty->GetValue();
-				if(sType == wxT("Dir")) pGridProperty = new wxDirProperty;
-				else if(sType == wxT("Int")) pGridProperty = new wxIntProperty;
-				else if(sType == wxT("Long")) pGridProperty = new wxIntProperty;
+		while(pcAttribute){
+			if (pcAttribute->GetName() == wxT("help")) sHelp = pcAttribute->GetValue();
+			else if (pcAttribute->GetName() == wxT("descr")) sLable = pcAttribute->GetValue();
+			else if (pcAttribute->GetName() == wxT("value")){ 
+				sValue = pcAttribute->GetValue();
+				pcPrVal = pcAttribute;
+			}else if (pcAttribute->GetName() == wxT("type")){
+				sType = pcAttribute->GetValue();
+				if(sType == wxT("Dir")) pGridProperty = new wxDirProperty(wxEmptyString,wxEmptyString);
+				else if(sType == wxT("Int")) pGridProperty = new wxIntProperty(wxEmptyString,wxEmptyString);
+				else if(sType == wxT("Long")) pGridProperty = new wxIntProperty(wxEmptyString,wxEmptyString);
 			}
-			pcProperty = pcProperty->GetNext();
+			pcAttribute = pcAttribute->GetNext();
 		};
 
 		if(pGridProperty){
@@ -533,8 +566,8 @@ void dlgConfig::loadCGrid(wxPropertyGrid* pGrid, wxXmlNode* pcNode){
 			pGridProperty->SetLabel(sLable);
 			pGridProperty->SetValue(vValue);
 			if(!pcPrVal) {
-				pcPrVal = new wxXmlProperty(wxT("value"),wxEmptyString);
-				pcNode->AddProperty(pcPrVal);
+				pcPrVal = new wxXmlAttribute(wxT("value"),wxEmptyString);
+				pcNode->AddAttribute(pcPrVal);
 			}
 			pGridProperty->SetClientData(pcPrVal);
 
@@ -575,8 +608,8 @@ void dlgConfig::onChkListSel(wxCommandEvent& event){
 	pHH->pText->SetLabel(it->second);
 
 }
-	void dlgConfig::onPropSel(wxPropertyGridEvent& event){
-		if(event.HasProperty())
+void dlgConfig::onPropSel(wxPropertyGridEvent& event){
+		//if(event.HasProperty())
 			setProps.find(PageData(m_flatNotebook1->GetPageText(m_flatNotebook1->GetSelection())))->pText->SetLabel(event.GetProperty()->GetHelpString());
 	}
 

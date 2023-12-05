@@ -4,6 +4,8 @@
 #include <string>
 #include "interface.h"
 #include "devfile.hpp"
+//#include "devgpib.hpp"
+#include "devtcpip.hpp"
 
 #include <sstream>
 #include <ctime>
@@ -22,9 +24,13 @@ void dynLoad(HandlerLibInterface* inp ){
 void fnGenDevs(HandlerLibInterface* inp ){
 	//Device interfaces
 	inp->mapDevs[std::string("FILE")] = new DevFile();
-	inp->mapDevs[std::string("SERIAL")] = new DevSerial();
 	inp->mapDevsInfo[std::string("FILE")] = std::string("Basic file IO");
+	inp->mapDevs[std::string("TCPIP")] = new DevTCPIP();
+	inp->mapDevsInfo[std::string("TCPIP")] = std::string("Raw TCP/IP");
+	inp->mapDevs[std::string("SERIAL")] = new DevSerial();
 	inp->mapDevsInfo[std::string("SERIAL")] = std::string("RS235 interface handler");
+	//inp->mapDevs[std::string("IEEE488")] = new DevGPIB();
+	//inp->mapDevsInfo[std::string("IEEE488")] = std::string("GPIB interface");
 
 	//Logging interfaces
 	inp->mapLogs[std::string("FILE")] = new LogFile();

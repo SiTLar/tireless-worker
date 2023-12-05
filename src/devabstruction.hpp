@@ -120,8 +120,9 @@ class DevDesc: public HandlerDesc{
 	//wxSemaphore *semFreeMutexes;
 	DevInterface * const  d;
 	DevDesc(DevInterface * ,HandlerLibData*);
-	protected:
 
+	protected:
+	
 	DevDesc(DevDesc&P):HandlerDesc(P.pHLD),  d(P.d->clone()), /*locker(P.locker), semFreeMutexes(P.semFreeMutexes),*/
 		itDevH(P.itDevH), id(P.id) {
 		//semFreeMutexes->Post();
@@ -129,6 +130,8 @@ class DevDesc: public HandlerDesc{
 	//static MBUSMUTEXES pmtxTree;
 
 	public:
+	std::string getTerm(){return d->sTerm;}
+	double readTimeout(){return d->lReadTimeout;}
 	virtual DevDesc * clone(){return new DevDesc(*this);}; 
 	//wxMutex &locker;
 	//DevLocker access;
@@ -146,7 +149,7 @@ class DevDesc: public HandlerDesc{
 	inline std::string makeBusLock(const std::string& inp) {return d->makeBusLock(inp);};
 	inline std::string makeUniqueDev(const std::string& inp) {return d->makeUniqueDev(inp);};
 	inline bool write(const std::string&inp) { return d->write(inp);};
-	inline bool read(std::string* inp, int num) { return d->read(inp, num);};
+	inline bool read(std::string* inp,std::string* err, int num) { return d->read(inp, err, num);};
 	inline bool operator<(/*DevDesc* lhs,*/ DevDesc* rhs){
 		return this->id < rhs->id;	
 	};
@@ -206,8 +209,10 @@ class HandlerBroker{
 	wxMutex  mtxDevTreeEdit;
 
 	wxMutex mtxAH;
+	inline bool makeRead(MyThread * , DevDesc*,  std::string* , int );
 	std::map<wxString, DevCont>mapAvailDevs;
 	std::map<wxString, LogDesc*>mapAvailLogs;
+
 	~HandlerBroker(){};
 	public:
 	DevDesc * getDev(MyThread * , DEVID);

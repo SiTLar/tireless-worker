@@ -29,6 +29,10 @@ class PlotFrame: public wxFrame {
 		void addPlot(FXYSeq * ); 
 		wxMutex mtx;
 
+		wxEvtHandler *ehFitHook;
+		void FitOff(wxCommandEvent &event); 
+		void FitOn(wxCommandEvent &event); 
+
 	private:
 		int axesPos[2];
 		bool ticks;
@@ -36,10 +40,10 @@ class PlotFrame: public wxFrame {
 		mpInfoCoords *nfo; // mpInfoLayer* nfo;
 		//DECLARE_DYNAMIC_CLASS(PlotFrame);
 		mpWindow        *m_plot;
+		bool m_bFit;
 		wxTextCtrl      *m_log;
 		DECLARE_EVENT_TABLE();
 };
-
 
 struct GraphHead{
 	const unsigned long TID;
@@ -62,8 +66,10 @@ class GraphHandler{
 	GraphHandler(GraphHandler &inp, int);
 	//~GraphHandler(); 
 
+	wxString m_sTitle;
 	void addData(double, double) ;
 	void setLabel(int , char * );
+	void setTitle(int , char * );
 	void setColour(int , char * );
 	void attach(GraphHandler&);
 

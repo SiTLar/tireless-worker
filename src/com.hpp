@@ -1,17 +1,16 @@
+#include "tools.hpp"
 #include <wx/wx.h>
 #include <wx/string.h>
+#include <string>
+#include <map>
 
-struct IcaseCmp : public std::binary_function <wxString,wxString,bool> {
-	bool operator() (const wxString& x, const wxString& y) const
-	{return (x.CmpNoCase(y)<0);};
-};
 
 class DevSerial: public DevInterface{
 
 	friend void fnGenDevs( HandlerLibInterface*);
 	protected:
 	DevSerial();
-	static std::map<wxString, bool (*) ( DevSerial*, const wxString&),IcaseCmp> mapAttr;
+	static std::map<std::string, bool (*) ( DevSerial*, const wxString&),IcaseCmp> mapAttr;
 	HANDLE handle;
 	COMMTIMEOUTS initTimeouts;
 	wxString sTerm;

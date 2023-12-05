@@ -135,6 +135,16 @@ int LogPlot::setLabel(Logger *l,const   std::string&str){
 	memmove(data.str, str.c_str(), data.length);
 	return o->send((wxChar*)&data, sizeof(data));
 }
+int LogPlot::setTitle(Logger *l,const   std::string&str){
+	LogPlot*o = dynamic_cast<LogPlot*>(l);
+	LPString data;
+	data.cCommand = 'T';
+	data.ulTID = o->myTID;
+	data.ulLID = o->myId;
+	data.length = str.length() < 255?str.length():255;
+	memmove(data.str, str.c_str(), data.length);
+	return o->send((wxChar*)&data, sizeof(data));
+}
 int LogPlot::setColour(Logger *l,const   std::string&str){
 	LogPlot*o = dynamic_cast<LogPlot*>(l);
 	LPString data;
@@ -173,10 +183,10 @@ int LogPlot::attach(Logger *l,const   std::string&str){
 }
 
 LogPlot::LogPlot(): Logger() , pUdpSocket (NULL){
-	wxSocketBase::Initialize();
 	server.LocalHost();
 	server.Service(48000);           
 	mapCommands[std::string("SET_LABEL")] =  &setLabel; 
+	mapCommands[std::string("SET_TITLE")] =  &setTitle; 
 	mapCommands[std::string("SET_COLOUR")] =  &setColour; 
 	mapCommands[std::string("ATTACH")] =  &attach; 
 
