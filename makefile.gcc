@@ -3,20 +3,31 @@
 #     Bakefile 0.2.8 (http://www.bakefile.org)
 #     Do not modify, all changes will be overwritten!
 # =========================================================================
+ifndef WX_VERSION
+WX_VERSION = 3.2
+#WX_VERSION = 2.8
+endif
+
 BUILD_LIB = ../libs
 BUILD_EXE = ../build
-DEBUG = 1
+EXTRALIB = ..
+EXTRAINC = ../include
+
 ifdef DEBUG
 WXDBG = yes
-CCDBG = -g
+CCDBG = -g -O0
+LIB_SUF = d
 DIR_SUF = _d
 DEBUG_CFG = _debug
+DBG_LIBS = -lexplain 
+WXCONFIG = wx-config --version=$(WX_VERSION) --debug=yes
 else
+DIR_SUF = 
+LIB_SUF =
 WXDBG = no
-CCDBG = -O2
-endif
-ifndef WXCONFIG
-WXCONFIG = wx-config
+CCDBG = -O3
+DBG_LIBS =
+WXCONFIG = wx-config --version=$(WX_VERSION) --debug=no
 endif
 dsrcdir = src
 O_LIB = $(BUILD_LIB)$(DIR_SUF)
@@ -41,6 +52,7 @@ NI_OBJECTS = \
 GENERICDLL_OBJECTS = \
 	$(OBJS)/devices_linux.o \
 	$(OBJS)/logfile.o \
+	$(OBJS)/devtcpip.o \
 	$(OBJS)/logplot.o \
 	$(OBJS)/logger.o \
 	$(OBJS)/tty.o 
@@ -48,41 +60,45 @@ GENERICDLL_OBJECTS = \
 LOGPLOTPR_OBJECTS = \
 	$(OBJS)/mathplot.o \
 	$(OBJS)/fxyseq.o \
+	$(OBJS)/dlgliminput_base.o \
 	$(OBJS)/logplotpr.o 
 
-CC =  $(shell $(WXCONFIG) --cc ) $(CCDBG) 
-CXX =  $(shell $(WXCONFIG) --cxx  ) $(CCDBG) -ansi -Wall
-CXXFLAGS = $(shell $(WXCONFIG) --cxxflags) -fPIC -I$(dsrcdir)/include -I../$(dsrcdir) -I$(dsrcdir) 
-LIBS = $(shell $(WXCONFIG) --libs)
+CC =  $(shell $(WXCONFIG) --cc ) $(CCDBG) -fPIC
+CXX =  $(shell $(WXCONFIG) --cxx  ) $(CCDBG) -ansi -Wall -fPIC
+CXXFLAGS = $(shell $(WXCONFIG) --cxxflags)  -std=gnu++11 -fPIC -I$(dsrcdir)/include -I../$(dsrcdir) -I$(dsrcdir)  -I$(EXTRAINC)
+#CXXFLAGS = $(shell $(WXCONFIG) --cxxflags)  -std=gnu++11 -Wfatal-errors -fPIC -I$(dsrcdir)/include -I../$(dsrcdir) -I$(dsrcdir)  -I$(EXTRAINC)
+LIBS = $(shell $(WXCONFIG) --libs std propgrid) -L$(EXTRALIB)  $(DBG_LIBS) -pie -lregina -L../wxflatnotebook/contrib/lib -lwxflatnotebooku$(LIB_SUF) 
 
+
+#-lwx_gtk2u_propgrid-$(WX_VERSION) 
 ### Conditionally set variables: ###
 
 
 ### Targets: ###
 
-all: $(OBJS)/tireless_worker $(O_LIB)/generic.so $(O_LIB)/ni.so $(OBJS)/logplotpr
+#all: $(OBJS)/tireless_worker $(O_LIB)/generic.so $(OBJS)/logplot 
+all: $(OBJS)/tireless_worker $(O_LIB)/generic.so $(O_LIB)/ni.so $(OBJS)/logplot
 
 clean: 
 	-rm $(OBJS)/*
 	-rm $(O_LIB)/*
-
 $(OBJS)/tireless_worker: $(MAIN_OBJECTS)
-	$(CXX) $(LIBS) -lwxflatnotebooku -lwxcode_gtk2u_propgrid-2.8 -lregina  -o $@ $(MAIN_OBJECTS)
+	$(CXX) $(MAIN_OBJECTS) $(LIBS)  -o $@ 
+#	$(CXX) $(MAIN_OBJECTS) $(LIBS) -lwxflatnotebooku$(LIB_SUF) -lwxcode_gtk2u$(LIB_SUF)_propgrid-2.8 -lregina $(DBG_LIBS) -o $@ 
+#	$(CXX) $(MAIN_OBJECTS) $(LIBS) -lwxflatnotebooku$(LIB_SUF) -lwxcode_gtk2ud_propgrid-2.8 -lregina $(DBG_LIBS) -o $@ 
 $(OBJS)/logplot: $(LOGPLOTPR_OBJECTS)
-	$(CXX) $(LIBS)  -o $@ $(LOGPLOTPR_OBJECTS)
+	$(CXX) $(LOGPLOTPR_OBJECTS) $(LIBS)  -o $@ 
 $(O_LIB)/generic.so: $(GENERICDLL_OBJECTS) 
-	$(CXX) -o $@ $(GENERICDLL_OBJECTS) --shared 
+	$(CXX)  $(GENERICDLL_OBJECTS) -o $@ --shared $(DBG_LIBS) 
 
-$(OBJS)/logplotpr: $(LOGPLOTPR_OBJECTS) 
-	$(CXX) $(LIBS)  -o $@ $(LOGPLOTPR_OBJECTS)
 
 $(O_LIB)/ni.so: $(NI_OBJECTS) 
 	$(CXX) -o $@ $(NI_OBJECTS) -lvisa --shared
 
 $(OBJS)/rxpack.o: $(dsrcdir)/rxpack.c
-	`$(WXCONFIG) --cc --cxxflags`  -c -o $@  -I$(dsrcdir) $<  -D__EMX__ -D__OS2__
+	`$(WXCONFIG) --cc --cxxflags` -fPIC -c -o $@  -I$(dsrcdir) $<  -D__EMX__ -D__OS2__
 $(OBJS)/mathfunc.o: $(dsrcdir)/mathfunc.c
-	`$(WXCONFIG) --cc --cxxflags`  -c -o $@  -I$(dsrcdir) $<
+	$(CC) -c -o $@  -I$(dsrcdir) $<
 $(OBJS)/%.o: $(dsrcdir)/%.cpp 
 	$(CXX) -c $(CXXFLAGS) -o $@  $<
 	$(CXX) -MM $(CXXFLAGS) $< > $(@:.o=.d)

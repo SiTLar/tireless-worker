@@ -17,8 +17,8 @@ extern "C" {
 #include "interface.h"
 #include "devtcpip.hpp"
 DevTCPIP::~DevTCPIP(){
-	if (poSocket->IsConnected ())
-		disconnect();
+//	if (poSocket->IsConnected ())
+//		disconnect();
 };
 bool DevTCPIP::connect(const std::string& strInit) {
 	bool rc;

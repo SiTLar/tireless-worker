@@ -5,7 +5,8 @@ extern "C"{
 #include <stdio.h>
 #include <termios.h>
 #include <string.h>
-#include <libexplain/tcgetattr.h>
+/*#include <libexplain/tcgetattr.h>
+ */
 #include <sys/ioctl.h>
 }
 
@@ -26,14 +27,14 @@ std::string DevTTY::makeBusLock(const std::string& strInit) const{
 };
 bool DevTTY::connect(const std::string& strInit) {
 	struct termios t = {0};
-	long lBaud = B9600, lMode = CS8;
+	unsigned long lBaud = B9600, lMode = CS8;
 	wxString sInit(strInit.c_str(), wxConvUTF8);
 	wxRegEx reOptions(wxT("(\\w+)(?:::)?([0-9]+)?(?:::)?(\\w{3})?(?:::)?(SW|HW|NONE)?"),wxRE_ADVANCED + wxRE_ICASE  );
 	wxASSERT_MSG(reOptions.IsValid(), wxT("RegEx failour"));
 	if (!reOptions.Matches(sInit)) return false;
-	handle = open(wxString(wxT("/dev/")+reOptions.GetMatch(sInit, 1)).mb_str(wxConvUTF8), O_RDWR | O_NOCTTY| O_NONBLOCK );
+	handle = open(wxString(wxT("/dev/")+reOptions.GetMatch(sInit, 1)).mb_str(wxConvUTF8), O_RDWR | O_NOCTTY|O_NDELAY| O_NONBLOCK );
 	if (handle < 0 )return false;
-	long flags = fcntl(handle, F_GETFL) & ~O_NONBLOCK;
+	long flags = fcntl(handle, F_GETFL) & ~O_NONBLOCK ;
 	fcntl(handle, F_SETFL, flags);
 	if (!reOptions.GetMatch(sInit, 2).IsEmpty()){
 		lBaud = canonizeBaud(wxString(reOptions.GetMatch(sInit, 2))); 
@@ -44,38 +45,47 @@ bool DevTTY::connect(const std::string& strInit) {
 		long lSize;
 		if (!(sMode.Mid(0,1).ToLong(&lSize))) return false;
 		switch (lSize){case 8: lMode = CS8 ; break; case 7: lMode = CS7 ; break; case 6: lMode = CS6 ; break; case 5: lMode =CS5 ; break; default: return false;}
+		//fprintf(stderr,"size:%lx\n", lMode);
 
 		if (!(sMode.Mid(1,1).CmpNoCase(wxT("o")))){
 			lMode |= PARENB;
 			lMode |= PARODD;
+			t.c_iflag |= INPCK;
 		}else if (!(sMode.Mid(1,1).CmpNoCase(wxT("e")))){
 			lMode |= PARENB;
 			lMode &= ~PARODD;
+			t.c_iflag |= INPCK;
 		}else if (!(sMode.Mid(1,1).CmpNoCase(wxT("n")))){
 			lMode &= ~PARENB;
 			lMode &= ~PARODD;
+			t.c_iflag &= ~INPCK;
 		}else return false;
 		if(sMode.Mid(2,1) == wxT("2")) lMode |= CSTOPB;
+		else lMode &= ~CSTOPB;
 	}
-	if (tcgetattr(handle, &t) < 0 ){
+	/*if (tcgetattr(handle, &t) < 0 ){
 		char message[3000];
 		//explain_message_tcgetattr(message, sizeof(message),handle,&t );
 		//wxASSERT_MSG(false, wxString(message , wxConvUTF8));
 		return false;
 	}
-
+*/
+		lMode &= ~(CRTSCTS);
 	if (!reOptions.GetMatch(sInit, 4).IsEmpty()){
 		wxString sMode(reOptions.GetMatch(sInit, 4));
-		lMode &= ~(IXANY|CRTSCTS);
-		if(sMode.CmpNoCase(wxT("hw")))
+		fprintf(stderr,"HW/SW:%s", sMode.utf8_str().data() );
+		lMode &= ~(CRTSCTS);
+		t.c_iflag &=  ~(IXON | IXOFF | IXANY);
+		if(!sMode.CmpNoCase(wxT("hw")))
 			lMode |= CRTSCTS;
-		else if (sMode.CmpNoCase(wxT("sw")))
-			lMode |= IXANY;
+		else if (!sMode.CmpNoCase(wxT("sw")))
+			t.c_iflag |= IXANY;
 	}
-	t.c_cflag =  lMode | CREAD;
-	t.c_lflag &= ~(ICANON|ECHO);
+	t.c_cflag |=  lMode | CREAD |CLOCAL;
+	t.c_lflag &= ~(ICANON|ECHO|ECHOE|ISIG);
 	t.c_cc[VMIN] = 0;
 	t.c_cc[VTIME] =0;
+	t.c_oflag &= ~(OPOST|ONLCR);
 	cfsetspeed(&t, lBaud);
 	return tcsetattr(handle, TCSANOW, &t )<0 ? false:true ;
 	//return setCBaud(this, lBaud);
@@ -99,7 +109,7 @@ bool DevTTY::attribute(Attr* pAttrStr){
 };
 
 bool DevTTY::write(const std::string& str){
-	int iState;
+	//int iState;
 	/*
 	ioctl(handle, TIOCMGET , &iState);
 	iState |= TIOCM_DTR;
@@ -118,20 +128,22 @@ bool DevTTY::write(const std::string& str){
 bool DevTTY::read(std::string*str, std::string*err,int count) {
 	if (count == 0) count = 1024;
 	count = count<1024?count:1024;
-	int iReadCount = 0, iTermLen =  sTerm.length(), iState; 
+	int iReadCount = 0;//, iTermLen =  sTerm.length(); 
 	char buf[1024] = {0};
-	char *pcTerm = new char[iTermLen];
+	//char *pcTerm = new char[iTermLen];
 	/*
 	ioctl(handle, TIOCMGET , &iState);
 	iState |= TIOCM_DSR;
 	ioctl(handle, TIOCMSET , &iState);
 	*/
-	memmove(pcTerm ,sTerm.c_str() , iTermLen);	
+	//memmove(pcTerm ,sTerm.c_str() , iTermLen);	
 	int re;
-	while ((re = ::read( handle, buf + iReadCount++, 1 )) > 0 && count-- != 0)
-		if(iReadCount >= iTermLen )if (!memcmp(pcTerm, buf + iReadCount - iTermLen, iTermLen))break;
+	while (((re = ::read( handle, buf + iReadCount, 1 )) > 0) && (count-- != 0)) 
+		iReadCount += re;
+	
+	//	if(iReadCount >= iTermLen )if (!memcmp(pcTerm, buf + iReadCount - iTermLen, iTermLen))break;
 	//fprintf(stderr, "iReadCount=%d, count=%d\n", iReadCount, count );
-	for(int idx = 0;idx< iReadCount; idx++) if(buf[idx])fprintf(stderr, "%2x",buf[idx]);
+	for(int idx = 0;idx< iReadCount; idx++) fprintf(stderr, "%02x|",buf[idx]);
 	if (re < 0) *err = std::string(strerror(errno));
 	*str = std::string(buf, iReadCount);
 	/*
@@ -158,9 +170,11 @@ inline long DevTTY::canonizeBaud(const wxString& s){
  bool DevTTY::setCBaud( DevTTY *o,long lBaud){
 	struct termios t;
 	if (tcgetattr(o->handle,&t ) < 0){
+		/*
 		char message[3000];
-		//explain_message_tcgetattr(message, sizeof(message),o->handle,&t );
-		//wxASSERT_MSG(false, wxString(message , wxConvUTF8));
+		explain_message_tcgetattr(message, sizeof(message),o->handle,&t );
+		wxASSERT_MSG(false, wxString(message , wxConvUTF8));
+		*/
 		return false;
 	}
 	cfsetspeed(&t, lBaud);
@@ -261,7 +275,7 @@ inline long DevTTY::canonizeBaud(const wxString& s){
 };
 */
 std::map<std::string, bool (*) ( DevTTY*, const std::string&), IcaseCmp > DevTTY::mapAttr;
-DevTTY::DevTTY(): DevInterface(), sTerm("\x0d\x0a"){
+DevTTY::DevTTY(): DevInterface(){
 	mapAttr[std::string("BAUD_RATE")] =  &setBaud;
 	mapAttr[std::string("SET_DTR")] =  &setDTR;
 	mapAttr[std::string("SET_RTS")] =  &setRTS;
