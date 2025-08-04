@@ -93,6 +93,12 @@
 #define X_BORDER_SEPARATION 40
 #define Y_BORDER_SEPARATION 60
 
+/** When setting x labels in date/time format, convert input time to local time. */
+#define mpX_LOCALTIME	0x10
+/** When setting x labels in date/time format, convert input time to UTC time (or just leave it raw). */
+#define mpX_UTCTIME	0x20
+#define mpX_RAWTIME	mpX_UTCTIME
+
 //-----------------------------------------------------------------------------
 // classes
 //-----------------------------------------------------------------------------
@@ -421,9 +427,15 @@ public:
         @param w the window to plot
         @sa mpLayer::Plot */
     virtual void   Plot(wxDC & dc, mpWindow & w);
+		
+    /** Set X axis label view mode.
+        @param mode mpX_NORMAL for normal labels, mpX_TIME for time axis in hours, minutes, seconds. */
+    void SetLabelMode(unsigned int mode, unsigned int time_conv = mpX_RAWTIME) { m_labelType = mode; m_timeConv = time_conv;};
 
 protected:
     wxString m_content; //!< string holding the coordinates to be drawn.
+    unsigned int m_labelType;
+		unsigned int m_timeConv;
 };
 
 /** @class mpInfoLegend
@@ -454,9 +466,13 @@ public:
         @param w the window to plot
         @sa mpLayer::Plot */
     virtual void   Plot(wxDC & dc, mpWindow & w);
+		
+		/** Swith item mode, which is the element on the left of text representing the plot line.
+		 * @param mode The item draw mode: mpLEGEND_LINE or mpLEGEND_SQUARE. */
+		void SetItemMode(int mode);
 
 protected:
-    
+    int m_item_mode;
 };
 
 
@@ -505,6 +521,10 @@ protected:
 #define mpALIGN_SW     0x02
 /** Aligns label to south-east. For use with mpFXY. */
 #define mpALIGN_SE     0x03
+/** Show legend items with line with the same pen of referred mpLayer  */
+#define mpLEGEND_LINE		0x00
+/** Show legend items with small square with the same color of referred mpLayer  */
+#define mpLEGEND_SQUARE	0x01
 
 /*@}*/
 
@@ -708,7 +728,7 @@ public:
 
     /** Set X axis label view mode.
         @param mode mpX_NORMAL for normal labels, mpX_TIME for time axis in hours, minutes, seconds. */
-    void SetLabelMode(unsigned int mode) { m_labelType = mode; };
+    void SetLabelMode(unsigned int mode, unsigned int time_conv = mpX_RAWTIME) { m_labelType = mode; m_timeConv = time_conv; };
 	
 	/** Set X axis Label format (used for mpX_NORMAL draw mode).
 	    @param format The format string */
@@ -722,6 +742,7 @@ protected:
     int m_flags; //!< Flag for axis alignment
     bool m_ticks; //!< Flag to toggle between ticks or grid
     unsigned int m_labelType; //!< Select labels mode: mpX_NORMAL for normal labels, mpX_TIME for time axis in hours, minutes, seconds
+    unsigned int m_timeConv;	//!< Selects if time has to be converted to local time or not.
 	wxString m_labelFormat; //!< Format string used to print labels
 
     DECLARE_DYNAMIC_CLASS(mpScaleX)
@@ -818,7 +839,8 @@ typedef std::deque<mpLayer*> wxLayerList;
         - Mouse Wheel DOWN+CTRL: Zoom out
 
 */
-class WXDLLIMPEXP_MATHPLOT mpWindow : public wxWindow
+//class WXDLLIMPEXP_MATHPLOT mpWindow : public wxWindow
+class WXDLLIMPEXP_MATHPLOT mpWindow : public wxScrolledWindow
 {
 public:
     mpWindow() {}

@@ -3,6 +3,8 @@ WXDIR = /home/sitlar/wxMSW-2.8.12
 !ifdef %WXDIR
 WXDIR = $(%WXDIR)
 !endif
+EXTRALIB = ..
+EXTRAINC = ..
 SRC_DIR = src 
 OBJS = &
 	../wat_$(PORTNAME)$(WXUNIVNAME)$(WXUNICODEFLAG)$(WXDEBUGFLAG)$(WXDLLFLAG)$(CFG)
@@ -31,17 +33,21 @@ GENDLL_OBJECTS =  &
 	$(OBJS)/devices.obj &
 	$(OBJS)/logger.obj &
 	$(OBJS)/com.obj &
+#	$(OBJS)/devgpib.obj &
+	$(OBJS)/devtcpip.obj &
 	$(OBJS)/logplot.obj &
+#	$(OBJS)/atexit.obj &
 	$(OBJS)/logfile.obj
 
 LOGPR_OBJECTS = &
 	$(OBJS)/mathplot.obj &
 	$(OBJS)/fxyseq.obj &
+	$(OBJS)/dlgliminput_base.obj &
 	$(OBJS)/logplotpr.obj 
 
 EXTENDEDDLL_OBJECTS = &
 	$(OBJS)/devvisa.obj &
-	$(OBJS)/ni_visa.obj 
+	$(OBJS)/extendeddll.obj 
 
 all : $(OBJS)
 $(OBJS) :
@@ -72,7 +78,7 @@ $(OBJS)/exe/logplot.exe :  $(LOGPR_OBJECTS)
 	@%append $(OBJS)/logpr.lbc libpath $(EXTRALIB)/ 
 	@%append $(OBJS)/logpr.lbc  $(__DEBUGINFO_1)  libpath $(LIBDIRNAME) system nt_win ref '_WinMain@16' $(____CAIRO_LIBDIR_FILENAMES_p) $(LDFLAGS)
 	@for %i in ($(LOGPR_OBJECTS)) do @%append $(OBJS)/logpr.lbc file %i
-	@for %i in (  $(__WXLIB_CORE_p)  $(__WXLIB_BASE_p) $(__WXLIB_ADV_p) $(__WXLIB_XML_p) $(__WXLIB_MONO_p)   $(__LIB_TIFF_p) $(__LIB_JPEG_p) $(__LIB_PNG_p)  wxzlib$(WXDEBUGFLAG).lib  wxregex$(WXUNICODEFLAG)$(WXDEBUGFLAG).lib wxexpat$(WXDEBUGFLAG).lib $(EXTRALIBS_FOR_BASE) $(__WXLIB_NET_p) $(__GDIPLUS_LIB_p) $(__CAIRO_LIB_p) kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib odbc32.lib $(EXTRALIB)/regina.lib $(EXTRALIB)/rexx.lib wxcode_$(PORTNAME)$(WX_RELEASE_NODOT)$(WXUNICODEFLAG)$(WXDEBUGFLAG)_propgrid.lib wx$(PORTNAME)$(WX_RELEASE_NODOT)$(WXUNICODEFLAG)$(WXDEBUGFLAG)_wxFlatNotebook.lib ) do @%append $(OBJS)/logpr.lbc library %i
+	@for %i in (  $(__WXLIB_CORE_p)  $(__WXLIB_BASE_p) $(__WXLIB_ADV_p) $(__WXLIB_XML_p) $(__WXLIB_MONO_p)   $(__LIB_TIFF_p) $(__LIB_JPEG_p) $(__LIB_PNG_p)  wxzlib$(WXDEBUGFLAG).lib  wxregex$(WXUNICODEFLAG)$(WXDEBUGFLAG).lib wxexpat$(WXDEBUGFLAG).lib $(EXTRALIBS_FOR_BASE) $(__WXLIB_NET_p) $(__GDIPLUS_LIB_p) $(__CAIRO_LIB_p) kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib odbc32.lib wxcode_$(PORTNAME)$(WX_RELEASE_NODOT)$(WXUNICODEFLAG)$(WXDEBUGFLAG)_propgrid.lib wx$(PORTNAME)$(WX_RELEASE_NODOT)$(WXUNICODEFLAG)$(WXDEBUGFLAG)_wxFlatNotebook.lib ) do @%append $(OBJS)/logpr.lbc library %i
 	@for %i in () do @%append $(OBJS)/logpr.lbc option stack=%i
 	wlink @$(OBJS)/logpr.lbc
 
@@ -96,6 +102,7 @@ $(OBJS)/dll/generic.dll :  $(GENDLL_OBJECTS)
 	@%create $(OBJS)/gendll.lbc
 	@%append $(OBJS)/gendll.lbc option quiet
 	@%append $(OBJS)/gendll.lbc name $^@
+#	@%append $(OBJS)/gendll.lbc alias _atexit='_stdcall_atexit@4'
 	@%append $(OBJS)/gendll.lbc option caseexact
 	@%append $(OBJS)/gendll.lbc  $(__DEBUGINFO_1)  libpath $(LIBDIRNAME) $(LDFLAGS)
 	@for %i in ($(GENDLL_OBJECTS)) do @%append $(OBJS)/gendll.lbc file %i
@@ -113,7 +120,7 @@ $(OBJS)/dll/extended.dll :  $(EXTENDEDDLL_OBJECTS)
 	@%append $(OBJS)/extdll.lbc option caseexact
 	@%append $(OBJS)/extdll.lbc  $(__DEBUGINFO_1)  libpath $(LIBDIRNAME) $(____CAIRO_LIBDIR_FILENAMES) $(LDFLAGS)
 	@for %i in ($(EXTENDEDDLL_OBJECTS)) do @%append $(OBJS)/extdll.lbc file %i
-	@for %i in ( $(__WXLIB_CORE_p)  $(__WXLIB_BASE_p)  $(__WXLIB_MONO_p) $(EXTRALIB)/visa32.lib) do @%append $(OBJS)/extdll.lbc library %i
+	@for %i in ( $(__WXLIB_CORE_p)  $(__WXLIB_BASE_p)  $(__WXLIB_MONO_p) $(EXTRALIB)/Lusbapi.lib $(EXTRALIB)/visa32.lib) do @%append $(OBJS)/extdll.lbc library %i
 	@%append $(OBJS)/extdll.lbc
 	@%append $(OBJS)/extdll.lbc system nt_dll
 	@%append $(OBJS)/extdll.lbc EXPORT dynLoad =dynLoad_
@@ -134,7 +141,7 @@ obj_dir = $(OBJS)
 .c : $(SRC_DIR)
 
 .cpp.obj: $< .AUTODEPEND
-	$(CXX) -bt=nt -zq -fo=$^@ $(MAIN_CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(__RTTIFLAG_7) $(__EXCEPTIONSFLAG_8) $<
+	$(CXX) -bt=nt -zq -fo=$^@ $(MAIN_CXXFLAGS) -DUNICODE $(CPPFLAGS) $(CXXFLAGS) $(__RTTIFLAG_7) $(__EXCEPTIONSFLAG_8) $<
 	
 .c.obj:  $< .AUTODEPEND
 	$(CC) -bt=nt -zq -fo=$^@ $(MAIN_CXXFLAGS) $<

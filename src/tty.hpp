@@ -20,7 +20,7 @@ class DevTTY: public DevInterface{
 	//DevTTY(const DevTTY& ) :DevDesc(), sTerm(wxT("\x0d\x0a")){ };
 	static std::map<std::string, bool (*) ( DevTTY*, const std::string&),IcaseCmp> mapAttr;
 	int handle;
-	std::string sTerm;
+//	std::string sTerm;
 	static bool setBaud ( DevTTY*, const std::string&);
 	static bool setCBaud ( DevTTY*, long);
 	static bool setStopBits ( DevTTY*, const std::string&);

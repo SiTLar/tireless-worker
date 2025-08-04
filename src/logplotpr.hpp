@@ -1,4 +1,6 @@
 #include "fxyseq.h"
+#include "dlgliminput_base.h"
+#include "mathplot.h"
 class PlotFrame: public wxFrame {
 	public:
 		PlotFrame(SharedP<PlotFrame*>&);
@@ -13,6 +15,7 @@ class PlotFrame: public wxFrame {
 		void OnPrintPreview( wxCommandEvent &event);
 		void OnPrint( wxCommandEvent &event );
 		void OnFit( wxCommandEvent &event );
+		void OnSetLimits(wxCommandEvent &event);
 		void OnAlignXAxis( wxCommandEvent &event );
 		void OnAlignYAxis( wxCommandEvent &event );
 		void OnToggleGrid( wxCommandEvent &event );
@@ -31,7 +34,8 @@ class PlotFrame: public wxFrame {
 
 		wxEvtHandler *ehFitHook;
 		void FitOff(wxCommandEvent &event); 
-		void FitOn(wxCommandEvent &event); 
+		void FitOn(wxCommandEvent &event);
+		void GetBoundingBox(double *);
 
 	private:
 		int axesPos[2];
@@ -104,4 +108,9 @@ union UnionMessages{
 	LPString S;
 	LPAttach A;
 };
+class dlgLimInput : public dlgLimInputbase {
+	public:
+		dlgLimInput(PlotFrame *); 
+		bool getLims(double *);
 
+};

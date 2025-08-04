@@ -247,7 +247,7 @@ void MyFrame::loadCfg(){
 						wxImage img(stream, wxBITMAP_TYPE_XPM );
 						bmp = wxBitmap(img);
 					}
-					m_toolBar1->InsertTool( ulPos, strIntConf.ulIDTools +ulPos, bmp, wxNullBitmap, false, NULL, sPath, sLable);
+					m_toolBar1->InsertTool( ulPos, strIntConf.ulIDTools +ulPos,sLable , bmp, wxNullBitmap,wxITEM_NORMAL,sLable, sPath, NULL);
 				}
 				sPath.Empty(); sImage.Empty(); sLable.Empty(); ulPos = 0;
 				toolNode= toolNode->GetNext();
@@ -428,8 +428,8 @@ void MyFrame::saveCfg(){
 	int iCTool = m_toolBar1->GetToolsCount();
 	while(iCTool){
 		node = new wxXmlNode(nodeTools, wxXML_ELEMENT_NODE, wxT("tool"));
-		node->AddAttribute(new wxXmlAttribute(wxT("path"),m_toolBar1->GetToolShortHelp(--iCTool + strIntConf.ulIDTools) ));
-		node->AddAttribute(new wxXmlAttribute(wxT("descr"), m_toolBar1->GetToolLongHelp(strIntConf.ulIDTools +iCTool)));
+		node->AddAttribute(new wxXmlAttribute(wxT("descr"),m_toolBar1->GetToolShortHelp(--iCTool + strIntConf.ulIDTools) ));
+		node->AddAttribute(new wxXmlAttribute(wxT("path"), m_toolBar1->GetToolLongHelp(strIntConf.ulIDTools +iCTool)));
 		node->AddAttribute(new wxXmlAttribute(wxT("pos"), wxString::Format(wxT("%d"), iCTool)));
 		wxToolBarToolBase* pTool = m_toolBar1->FindById(strIntConf.ulIDTools +iCTool);
 		if (pTool){

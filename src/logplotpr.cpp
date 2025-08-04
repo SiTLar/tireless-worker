@@ -22,6 +22,7 @@
 #include <wx/ipc.h>
 #include <wx/init.h>
 #include <wx/regex.h>
+#include <wx/string.h>
 #include <map>
 #include <math.h>
 #include <wx/socket.h>
@@ -29,6 +30,7 @@
 #include "logplotapi.h"
 #include "logplotpr.hpp"
 #include "mathplot.h"
+#include "dlgliminput_base.h"
 // #include <time.h>
 extern "C"{
 #include <stdio.h>
@@ -77,6 +79,7 @@ BEGIN_EVENT_TABLE(PlotFrame,wxFrame)
 	EVT_MENU(ID_PRINT_PREVIEW, PlotFrame::OnPrintPreview)
 	EVT_MENU(ID_PRINT, PlotFrame::OnPrint)
 	    EVT_MENU( mpID_FIT,       PlotFrame::OnFit)
+	    EVT_MENU( mpID_SET_LIMITS,       PlotFrame::OnSetLimits)
 	EVT_MENU(ID_ALIGN_X_AXIS, PlotFrame::OnAlignXAxis)
 	EVT_MENU(ID_ALIGN_Y_AXIS, PlotFrame::OnAlignYAxis)
 	EVT_MENU(ID_TOGGLE_GRID, PlotFrame::OnToggleGrid)
@@ -103,6 +106,7 @@ PlotFrame::PlotFrame(SharedP<PlotFrame*>&_myTail)
 		file_menu->Append( ID_QUIT, wxT("E&xit\tAlt-X"));
 
 		view_menu->Append( mpID_FIT, wxT("&Fit bounding box"), wxT("Set plot view to show all items"));
+		view_menu->Append( mpID_SET_LIMITS, wxT("&Set limits"), wxT("Set plot view limits"));
 		view_menu->Append( mpID_ZOOM_IN, wxT("Zoom in"), wxT("Zoom in plot view."));
 		view_menu->Append( mpID_ZOOM_OUT, wxT("Zoom out"), wxT("Zoom out plot view."));
 		view_menu->AppendSeparator();
@@ -173,6 +177,7 @@ PlotFrame::PlotFrame(SharedP<PlotFrame*>&_myTail)
 
 		ehFitHook = new wxEvtHandler();
 		ehFitHook->Connect(mpID_FIT,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOn), NULL, this);
+		ehFitHook->Connect(mpID_SET_LIMITS,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::OnSetLimits), NULL, this);
 		ehFitHook->Connect(mpID_ZOOM_IN,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOff), NULL, this);
 		ehFitHook->Connect(mpID_CENTER,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOff), NULL, this);
 		ehFitHook->Connect(mpID_ZOOM_OUT,wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(PlotFrame::FitOff), NULL, this);
@@ -218,6 +223,21 @@ void PlotFrame::OnFit( wxCommandEvent &WXUNUSED(event) )
 {
 	m_bFit = true;
 	m_plot->Fit();
+}
+void PlotFrame::GetBoundingBox(double *bbox){
+
+	m_plot->GetBoundingBox(bbox);
+}
+void PlotFrame::OnSetLimits(wxCommandEvent &WXUNUSED(event) ){
+	double bbox[4];
+	dlgLimInput dlg(this);
+	if (dlg.ShowModal() != wxID_OK) return;
+	if(!dlg.getLims(bbox)){
+		wxMessageBox(wxT("Invalid value"));
+		return;
+	}
+	m_plot->Fit(bbox[0],bbox[1],bbox[2],bbox[3]);
+
 }
 void PlotFrame::OnAbout( wxCommandEvent &WXUNUSED(event) )
 {
@@ -460,6 +480,7 @@ void LPApp::OnSockInput(wxSocketEvent& evt ) {
 	}
 }
 PlotFrame::~PlotFrame(){
+	m_plot->RemoveEventHandler(ehFitHook);
 	//	wxMessageBox(wxT("TADA"));
 };
 void PlotFrame::OnClose(wxCloseEvent &WXUNUSED(event) ) {
@@ -555,5 +576,19 @@ bool LPApp::OnInit(){
 int LPApp::OnExit(){
 	return 0;
 }
-
+dlgLimInput::dlgLimInput(PlotFrame*parent):dlgLimInputbase(parent){
+	double bbox[6];
+	parent->GetBoundingBox(bbox);
+	m_X_min->SetValue(wxString::Format(_("%1.3e"),bbox[0]));
+	m_X_max->SetValue(wxString::Format(_("%1.3e"),bbox[1])); 
+	m_Y_min->SetValue(wxString::Format(_("%1.3e"),bbox[2])); 
+	m_Y_max->SetValue(wxString::Format(_("%1.3e"),bbox[3])); 
+};
+bool dlgLimInput::getLims(double *bbox){
+	return	m_X_min->GetValue().ToDouble(&bbox[0]) 
+		&& m_X_max->GetValue().ToDouble(&bbox[1]) 
+		&& m_Y_min->GetValue().ToDouble(&bbox[2]) 
+		&& m_Y_max->GetValue().ToDouble(&bbox[3]);
+	
+};
 IMPLEMENT_APP(LPApp)

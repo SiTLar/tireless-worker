@@ -141,6 +141,7 @@ bool HandlerBroker::read(MyThread * TID, DEVID id, std::string* pstr, int count)
 inline bool HandlerBroker::makeRead(MyThread * TID, DevDesc*pDev,  std::string* pstr, int iToRead){
 	bool rc;
 	int iRed = 0;
+	std::string strTmp;
 	if (iToRead == 0) iToRead = 1024;
 	int count = iToRead = iToRead<1024?iToRead:1024;
 
@@ -148,12 +149,14 @@ inline bool HandlerBroker::makeRead(MyThread * TID, DevDesc*pDev,  std::string* 
 	wxStopWatch sw;
 	do{
 		strError.clear();
-		rc = pDev->read(pstr, &strError, count);
+		rc = pDev->read(&strTmp, &strError, iToRead);
 		if(!rc || !strError.empty()){
 			wxLogError(wxString::FromUTF8(strError.c_str()));
 			return false;
 		}
+		*pstr += strTmp;
 		iRed = pstr->length();
+		iToRead -= iRed;
 		/*if ((pstr->find(pDev->getTerm()) != std::string::npos)
 		||	sw.Time() > pDev->readTimeout()) break;
 		*/
@@ -218,7 +221,7 @@ DevDesc::DevDesc(DevInterface *inpD, HandlerLibData*inpHLD):
 	{
 	};
 DevDesc::~DevDesc(){ 
-	wxLogError("Deleting d");
+//	wxLogError("Deleting d");
 	delete d;
 	/*
 	if (semFreeMutexes->TryWait() ==  wxSEMA_BUSY ){

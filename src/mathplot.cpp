@@ -16,8 +16,9 @@
 #endif
 
 // For compilers that support precompilation, includes "wx.h".
-#include <wx/window.h>
-//#include <wx/wxprec.h>
+#include <wx/wx.h>
+// #include <wx/window.h>
+// #include <wx/wxprec.h>
 
 // Comment out for release operation:
 // (Added by J.L.Blanco, Aug 2007)
@@ -137,7 +138,11 @@ void mpInfoLayer::UpdateInfo(mpWindow& w, wxEvent& event)
 
 bool mpInfoLayer::Inside(wxPoint& point)
 {
+#if wxCHECK_VERSION(2, 8, 0)
     return m_dim.Contains(point);
+#else
+	return m_dim.Inside(point);
+#endif
 }
 
 void mpInfoLayer::Move(wxPoint delta)
@@ -197,12 +202,12 @@ wxSize mpInfoLayer::GetSize()
 
 mpInfoCoords::mpInfoCoords() : mpInfoLayer()
 {
-    
+    m_labelType = mpX_NORMAL;
 }
 
 mpInfoCoords::mpInfoCoords(wxRect rect, const wxBrush* brush) : mpInfoLayer(rect, brush)
 {
-    
+    m_labelType = mpX_NORMAL;
 }
     
 mpInfoCoords::~mpInfoCoords()
@@ -212,23 +217,62 @@ mpInfoCoords::~mpInfoCoords()
 
 void mpInfoCoords::UpdateInfo(mpWindow& w, wxEvent& event)
 {
-    if (event.GetEventType() == wxEVT_MOTION) {
-        int mouseX = ((wxMouseEvent&)event).GetX();
-        int mouseY = ((wxMouseEvent&)event).GetY();
-/* It seems that Windows port of wxWidgets don't support multi-line test to be drawn in a wxDC.
-   wxGTK instead works perfectly with it.
-   Info on wxForum: http://wxforum.shadonet.com/viewtopic.php?t=3451&highlight=drawtext+eol */
-#ifdef _WINDOWS
-        m_content.Printf(wxT("x = %f y = %f"), w.p2x(mouseX), w.p2y(mouseY));
-#else
-		m_content.Printf(wxT("x = %f\ny = %f"), w.p2x(mouseX), w.p2y(mouseY));
-#endif
-    }
+	time_t when = 0;
+	double xVal = 0.0, yVal = 0.0;
+	struct tm timestruct;
+	if (event.GetEventType() == wxEVT_MOTION) {
+		int mouseX = ((wxMouseEvent&)event).GetX();
+		int mouseY = ((wxMouseEvent&)event).GetY();
+		xVal = w.p2x(mouseX);
+		yVal = w.p2y(mouseY);
+		/* It seems that Windows port of wxWidgets don't support multi-line text to be drawn in a wxDC.
+		 *   wxGTK instead works perfectly with it.
+		 *   Info on wxForum: http://wxforum.shadonet.com/viewtopic.php?t=3451&highlight=drawtext+eol */
+		// UPDATE 2018-10-04: this seems not to be still valid on latest wxWidgets.
+		// #ifdef _WINDOWS
+		//     m_content.Printf(wxT("x = %f y = %f"), w.p2x(mouseX), w.p2y(mouseY));
+		// #else
+		
+		m_content.Clear();
+		
+		if (m_labelType == mpX_NORMAL)
+			m_content.Printf(wxT("x = %f\ny = %f"), xVal, yVal);
+		else if (m_labelType == mpX_DATETIME) {
+			when = (time_t) xVal;
+			if (when > 0) {
+				if (m_timeConv == mpX_LOCALTIME) {
+					timestruct = *localtime(&when);
+				} else {
+					timestruct = *gmtime(&when);
+				}
+				m_content.Printf(wxT("x = %04.0f-%02.0f-%02.0fT%02.0f:%02.0f:%02.0f\ny = %f"), (double)timestruct.tm_year+1900, (double)timestruct.tm_mon+1, (double)timestruct.tm_mday, (double)timestruct.tm_hour, (double)timestruct.tm_min, (double)timestruct.tm_sec, yVal);
+			}
+		} else if (m_labelType == mpX_DATE) {
+			when = (time_t) xVal;
+			if (when > 0) {
+				if (m_timeConv == mpX_LOCALTIME) {
+					timestruct = *localtime(&when);
+				} else {
+					timestruct = *gmtime(&when);
+				}
+				m_content.Printf(wxT("x = %04.0f-%02.0f-%02.0f\ny = %f"), (double)timestruct.tm_year+1900, (double)timestruct.tm_mon+1, (double)timestruct.tm_mday, yVal);
+			}
+		} else if ((m_labelType == mpX_TIME) || (m_labelType == mpX_HOURS)) {
+			double modulus = fabs(xVal);
+			double sign = xVal/modulus;
+			double hh = floor(modulus/3600);
+			double mm = floor((modulus - hh*3600)/60);
+			double ss = modulus - hh*3600 - mm*60;
+			m_content.Printf(wxT("x = %02.0f:%02.0f:%02.0f\ny = %f"), sign*hh, mm, floor(ss), yVal);
+		}
+
+	}
 }
 
 void mpInfoCoords::Plot(wxDC & dc, mpWindow & w)
 {
     if (m_visible) {
+			int textX = 0, textY = 0;
         // Adjust relative position inside the window
         int scrx = w.GetScrX();
         int scry = w.GetScrY();
@@ -251,18 +295,35 @@ void mpInfoCoords::Plot(wxDC & dc, mpWindow & w)
 //     wxBrush semiWhite(image1);
         dc.SetBrush(m_brush);
         dc.SetFont(m_font);
-        int textX, textY;
+        
+				// It looks like that on Windows, GetTetxExtent function
+				// ignores the newline in the calculus of size
+#ifdef _WIN32
+				// Windows code
+				wxString m_contentX, m_contentY;
+				int textY_H = 0;
+				m_contentX = m_content.BeforeFirst(wxT('\n'));
+				m_contentY = m_content.AfterFirst(wxT('\n'));
+				dc.GetTextExtent(m_contentX, &textX, &textY);
+				dc.GetTextExtent(m_contentY, &textY_H, &textY);
+				textX = (textX > textY_H) ? textX : textY_H;
+				if (m_dim.width < textX + 10) m_dim.width = textX + 10;
+				if (m_dim.height < 2*textY + 10) m_dim.height = 2*textY + 10;
+#else
+				// *NIX code
         dc.GetTextExtent(m_content, &textX, &textY);
         if (m_dim.width < textX + 10) m_dim.width = textX + 10;
-        if (m_dim.height < textY + 10) m_dim.height = textY + 10;
-        dc.DrawRectangle(m_dim.x, m_dim.y, m_dim.width, m_dim.height);
+				if (m_dim.height < textY + 10) m_dim.height = textY + 10;
+#endif
+
+				dc.DrawRectangle(m_dim.x, m_dim.y, m_dim.width, m_dim.height);
         dc.DrawText(m_content, m_dim.x + 5, m_dim.y + 5);
     }
 }
 
 mpInfoLegend::mpInfoLegend() : mpInfoLayer()
 {
-    
+	m_item_mode = mpLEGEND_LINE;
 }
 
 mpInfoLegend::mpInfoLegend(wxRect rect, const wxBrush* brush) : mpInfoLayer(rect, brush)
@@ -282,51 +343,47 @@ void mpInfoLegend::UpdateInfo(mpWindow& w, wxEvent& event)
 
 void mpInfoLegend::Plot(wxDC & dc, mpWindow & w)
 {
-    if (m_visible) {
-        // Adjust relative position inside the window
-        int scrx = w.GetScrX();
-        int scry = w.GetScrY();
-        if ((m_winX != scrx) || (m_winY != scry)) {
-#ifdef MATHPLOT_DO_LOGGING
-            // wxLogMessage(_("mpInfoLayer::Plot() screen size has changed from %d x %d to %d x %d"), m_winX, m_winY, scrx, scry);
-#endif
-            if (m_winX != 1) m_dim.x = (int) floor((double)(m_dim.x*scrx/m_winX));
-            if (m_winY != 1) {
-                m_dim.y = (int) floor((double)(m_dim.y*scry/m_winY));
-                UpdateReference();
-            }
-            // Finally update window size
-            m_winX = scrx;
-            m_winY = scry;
-        }
-//     wxImage image0(wxT("pixel.png"), wxBITMAP_TYPE_PNG);
-//     wxBitmap image1(image0);
-//     wxBrush semiWhite(image1);
-        dc.SetBrush(m_brush);
-        dc.SetFont(m_font);
-        const int baseWidth = (mpLEGEND_MARGIN*2 + mpLEGEND_LINEWIDTH);
-        int textX = baseWidth, textY = mpLEGEND_MARGIN;
-        int plotCount = 0;
-        int posY = 0;
-        int tmpX = 0, tmpY = 0;
-        mpLayer* ly = NULL;
-        wxPen lpen;
-        wxString label;
-        for (unsigned int p = 0; p < w.CountAllLayers(); p++) {
-            ly = w.GetLayer(p);
-            if ((ly->GetLayerType() == mpLAYER_PLOT) && (ly->IsVisible())) {
-                label = ly->GetName();
-                dc.GetTextExtent(label, &tmpX, &tmpY);
-                textX = (textX > (tmpX + baseWidth)) ? textX : (tmpX + baseWidth + mpLEGEND_MARGIN);
-                textY += (tmpY);
-#ifdef MATHPLOT_DO_LOGGING
-                // wxLogMessage(_("mpInfoLegend::Plot() Adding layer %d: %s"), p, label.c_str());
-#endif
-            }
-        }
-        dc.SetPen(m_pen);
-        dc.SetBrush(m_brush);
-        m_dim.width = textX;
+	if (m_visible) {
+		// Adjust relative position inside the window
+		int scrx = w.GetScrX();
+		int scry = w.GetScrY();
+		if ((m_winX != scrx) || (m_winY != scry)) {
+			if (m_winX != 1) m_dim.x = (int) floor((double)(m_dim.x*scrx/m_winX));
+			if (m_winY != 1) {
+				m_dim.y = (int) floor((double)(m_dim.y*scry/m_winY));
+				UpdateReference();
+			}
+			// Finally update window size
+			m_winX = scrx;
+			m_winY = scry;
+		}
+		//     wxImage image0(wxT("pixel.png"), wxBITMAP_TYPE_PNG);
+		//     wxBitmap image1(image0);
+		//     wxBrush semiWhite(image1);
+		dc.SetBrush(m_brush);
+		dc.SetFont(m_font);
+		const int baseWidth = (mpLEGEND_MARGIN*2 + mpLEGEND_LINEWIDTH);
+		int textX = baseWidth, textY = mpLEGEND_MARGIN;
+		int plotCount = 0;
+		int posY = 0;
+		int tmpX = 0, tmpY = 0;
+		mpLayer* ly = NULL;
+		wxPen lpen;
+		wxString label;
+		for (unsigned int p = 0; p < w.CountAllLayers(); p++) {
+			ly = w.GetLayer(p);
+			if ((ly->GetLayerType() == mpLAYER_PLOT) && (ly->IsVisible())) {
+				label = ly->GetName();
+				dc.GetTextExtent(label, &tmpX, &tmpY);
+				textX = (textX > (tmpX + baseWidth)) ? textX : (tmpX + baseWidth + mpLEGEND_MARGIN);
+				textY += (tmpY);
+				
+			}
+		}
+		dc.SetPen(m_pen);
+		dc.SetBrush(m_brush);
+		m_dim.width = textX;
+		wxBrush sqrBrush(*wxWHITE, wxBRUSHSTYLE_SOLID);
 		if (textY != mpLEGEND_MARGIN) { // Don't draw any thing if there are no visible layers
 			textY += mpLEGEND_MARGIN;
 			m_dim.height = textY;
@@ -341,20 +398,38 @@ void mpInfoLegend::Plot(wxDC & dc, mpWindow & w)
 					//textX = (textX > (tmpX + baseWidth)) ? textX : (tmpX + baseWidth);
 					//textY += (tmpY + mpLEGEND_MARGIN);
 					posY = m_dim.y + mpLEGEND_MARGIN + plotCount*tmpY + (tmpY>>1);
-					dc.DrawLine(m_dim.x + mpLEGEND_MARGIN,   // X start coord
-								posY,                        // Y start coord
-								m_dim.x + mpLEGEND_LINEWIDTH + mpLEGEND_MARGIN, // X end coord
-								posY);
+					if (m_item_mode == mpLEGEND_LINE) {
+						dc.DrawLine(m_dim.x + mpLEGEND_MARGIN,   // X start coord
+												posY,                        // Y start coord
+												m_dim.x + mpLEGEND_LINEWIDTH + mpLEGEND_MARGIN, // X end coord
+												posY);
+					} else if (m_item_mode == mpLEGEND_SQUARE) {
+						sqrBrush.SetColour(lpen.GetColour());
+						// dc.SetBackground(sqrBrush);
+						// wxColour penCopy(lpen.GetColour()); // (128, 128, 128, wxALPHA_OPAQUE); // m_pen.GetColour();
+						// wxBrush sqrBrush(penCopy, wxBRUSHSTYLE_SOLID);
+						dc.SetBrush(sqrBrush);
+						dc.DrawRectangle(m_dim.x + mpLEGEND_MARGIN, 
+														 posY - (mpLEGEND_LINEWIDTH >> 1),
+														 mpLEGEND_LINEWIDTH,
+														 mpLEGEND_LINEWIDTH
+														);
+					}
 					//dc.DrawRectangle(m_dim.x + 5, m_dim.y + 5 + plotCount*tmpY, 5, 5);
 					dc.DrawText(label, m_dim.x + baseWidth, m_dim.y + mpLEGEND_MARGIN + plotCount*tmpY);
 					plotCount++;
 				}
 			}
 		}
-    }
+	}
 }
 
-
+void mpInfoLegend::SetItemMode(int mode)
+{
+	if ((mode == mpLEGEND_LINE) || (mode == mpLEGEND_SQUARE)) {
+		m_item_mode = mode;
+	}
+}
 
 //-----------------------------------------------------------------------------
 // mpLayer implementations - functions
@@ -724,6 +799,7 @@ mpScaleX::mpScaleX(wxString name, int flags, bool ticks, unsigned int type)
     m_flags = flags;
     m_ticks = ticks;
     m_labelType = type;
+		m_timeConv = mpX_RAWTIME;
     m_type = mpLAYER_AXIS;
 	m_labelFormat = wxT("");
 }
@@ -809,6 +885,8 @@ void mpScaleX::Plot(wxDC & dc, mpWindow & w)
 		tmp=-65535;
 		int labelH = 0; // Control labels heigth to decide where to put axis name (below labels or on top of axis)
 		int maxExtent = 0;
+		time_t when = 0;
+		struct tm timestruct;
 		for (n = n0; n < end; n += step) {
 			const int p = (int)((n - w.GetPosX()) * w.GetScaleX());
 #ifdef MATHPLOT_DO_LOGGING
@@ -839,13 +917,25 @@ void mpScaleX::Plot(wxDC & dc, mpWindow & w)
 				if (m_labelType == mpX_NORMAL)
 					s.Printf(fmt, n);
 				else if (m_labelType == mpX_DATETIME) {
-					time_t when = (time_t)n;
-					struct tm tm = *localtime(&when);
-					s.Printf(fmt, (double)tm.tm_year+1900, (double)tm.tm_mon+1, (double)tm.tm_mday, (double)tm.tm_hour, (double)tm.tm_min, (double)tm.tm_sec);
+					when = (time_t)n;
+					if (when > 0) {
+						if (m_timeConv == mpX_LOCALTIME) {
+							timestruct = *localtime(&when);
+						} else {
+							timestruct = *gmtime(&when);
+						}
+						s.Printf(fmt, (double)timestruct.tm_year+1900, (double)timestruct.tm_mon+1, (double)timestruct.tm_mday, (double)timestruct.tm_hour, (double)timestruct.tm_min, (double)timestruct.tm_sec);
+					}
 				} else if (m_labelType == mpX_DATE) {
-					time_t when = (time_t)n;
-					struct tm tm = *localtime(&when);
-					s.Printf(fmt, (double)tm.tm_year+1900, (double)tm.tm_mon+1, (double)tm.tm_mday);
+					when = (time_t)n;
+					if (when > 0) {
+						if (m_timeConv == mpX_LOCALTIME) {
+							timestruct = *localtime(&when);
+						} else {
+							timestruct = *gmtime(&when);
+						}
+						s.Printf(fmt, (double)timestruct.tm_year+1900, (double)timestruct.tm_mon+1, (double)timestruct.tm_mday);
+					}
 				} else if ((m_labelType == mpX_TIME) || (m_labelType == mpX_HOURS)) {
 					double modulus = fabs(n);
 					double sign = n/modulus;
@@ -886,13 +976,25 @@ void mpScaleX::Plot(wxDC & dc, mpWindow & w)
 				if (m_labelType == mpX_NORMAL)
 					s.Printf(fmt, n);
 				else if (m_labelType == mpX_DATETIME) {
-					time_t when = (time_t)n;
-					struct tm tm = *localtime(&when);
-					s.Printf(fmt, (double)tm.tm_year+1900, (double)tm.tm_mon+1, (double)tm.tm_mday, (double)tm.tm_hour, (double)tm.tm_min, (double)tm.tm_sec);
+					when = (time_t)n;
+					if (when > 0) {
+						if (m_timeConv == mpX_LOCALTIME) {
+							timestruct = *localtime(&when);
+						} else {
+							timestruct = *gmtime(&when);
+						}
+						s.Printf(fmt, (double)timestruct.tm_year+1900, (double)timestruct.tm_mon+1, (double)timestruct.tm_mday, (double)timestruct.tm_hour, (double)timestruct.tm_min, (double)timestruct.tm_sec);
+					}
 				} else if (m_labelType == mpX_DATE) {
-					time_t when = (time_t)n;
-					struct tm tm = *localtime(&when);
-					s.Printf(fmt, (double)tm.tm_year+1900, (double)tm.tm_mon+1, (double)tm.tm_mday);
+					when = (time_t)n;
+					if (when > 0) {
+						if (m_timeConv == mpX_LOCALTIME) {
+							timestruct = *localtime(&when);
+						} else {
+							timestruct = *gmtime(&when);
+						}
+						s.Printf(fmt, (double)timestruct.tm_year+1900, (double)timestruct.tm_mon+1, (double)timestruct.tm_mday);
+					}
 				} else if ((m_labelType == mpX_TIME) || (m_labelType == mpX_HOURS)) {
 					double modulus = fabs(n);
 					double sign = n/modulus;
@@ -997,7 +1099,7 @@ void mpScaleY::Plot(wxDC & dc, mpWindow & w)
 			orgx = 1; //-dc.LogicalToDeviceX(0);
 
 
-        // Draw line
+		// Draw line
 		dc.DrawLine( orgx, 0, orgx, extend);
 		
 		// To cut the axis line when draw outside margin is false, use this code
@@ -1010,7 +1112,7 @@ void mpScaleY::Plot(wxDC & dc, mpWindow & w)
 		const double step = exp( mpLN10 * dig);
 		const double end  = w.GetPosY() + (double)extend / w.GetScaleY();
 
-		wxCoord tx, ty;
+		wxCoord tx = 0, ty = 0;
 		wxString s;
 		wxString fmt;
 		int tmp = (int)dig;
@@ -1088,8 +1190,8 @@ void mpScaleY::Plot(wxDC & dc, mpWindow & w)
 			}
 		}
 		}
+		
 		// Draw axis name
-
 		dc.GetTextExtent(m_name, &tx, &ty);
 		switch (m_flags) {
 			case mpALIGN_BORDER_LEFT:
@@ -1167,7 +1269,8 @@ BEGIN_EVENT_TABLE(mpWindow, wxWindow)
 END_EVENT_TABLE()
 
 mpWindow::mpWindow( wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size, long flag )
-    : wxWindow( parent, id, pos, size, flag, wxT("mathplot") )
+   // : wxWindow( parent, id, pos, size, flag, wxT("mathplot") )
+    : wxScrolledWindow( parent, id, pos, size, flag, wxT("mathplot") )
 {
     m_scaleX = m_scaleY = 1.0;
     m_posX   = m_posY   = 0;
@@ -1793,7 +1896,7 @@ void mpWindow::OnPaint( wxPaintEvent& WXUNUSED(event) )
     trgDc->SetPen( *wxTRANSPARENT_PEN );
     wxBrush brush( GetBackgroundColour() );
     trgDc->SetBrush( brush );
-	trgDc->SetTextForeground(m_fgColour);
+		trgDc->SetTextForeground(m_fgColour);
     trgDc->DrawRectangle(0,0,m_scrX,m_scrY);
 
     // Draw all the layers:
@@ -1889,7 +1992,8 @@ void mpWindow::SetMPScrollbars(bool status)
     {
         SetScrollbar(wxHORIZONTAL, 0, 0, 0);
         SetScrollbar(wxVERTICAL, 0, 0, 0);
-    }
+    	ShowScrollbars(wxSHOW_SB_NEVER,wxSHOW_SB_NEVER);
+    }else ShowScrollbars(wxSHOW_SB_ALWAYS,wxSHOW_SB_ALWAYS);
     // else the scroll bars will be updated in UpdateAll();
     UpdateAll();
 
@@ -1933,13 +2037,25 @@ bool mpWindow::UpdateBBox()
             if (first)
             {
                 first = FALSE;
-                m_minX = f->GetMinX(); m_maxX=f->GetMaxX();
-                m_minY = f->GetMinY(); m_maxY=f->GetMaxY();
+                m_minX = f->GetMinX(); 
+								m_maxX=f->GetMaxX();
+                m_minY = f->GetMinY(); 
+								m_maxY=f->GetMaxY();
             }
             else
             {
-                if (f->GetMinX()<m_minX) m_minX=f->GetMinX(); if (f->GetMaxX()>m_maxX) m_maxX=f->GetMaxX();
-                if (f->GetMinY()<m_minY) m_minY=f->GetMinY(); if (f->GetMaxY()>m_maxY) m_maxY=f->GetMaxY();
+                if (f->GetMinX() < m_minX) {
+									m_minX=f->GetMinX();
+								}
+								if (f->GetMaxX() > m_maxX) {
+									m_maxX=f->GetMaxX();
+								}
+                if (f->GetMinY() < m_minY) {
+									m_minY=f->GetMinY();
+								}
+								if (f->GetMaxY() > m_maxY) {
+									m_maxY=f->GetMaxY();
+								}
             }
         }
         //node = node->GetNext();
@@ -2210,13 +2326,15 @@ bool mpWindow::SaveScreenshot(const wxString& filename, int type, wxSize imageSi
 		SetScr(sizeX, sizeY);
 	}
 
-    wxBitmap screenBuffer(sizeX,sizeY);
-    wxMemoryDC screenDC;
-    screenDC.SelectObject(screenBuffer);
-    screenDC.SetPen( *wxTRANSPARENT_PEN );
-    wxBrush brush( GetBackgroundColour() );
-    screenDC.SetBrush( brush );
-    screenDC.DrawRectangle(0,0,sizeX,sizeY);
+	wxBitmap screenBuffer(sizeX,sizeY);
+	wxMemoryDC screenDC;
+	screenDC.SelectObject(screenBuffer);
+	// screenDC.SetPen( *wxTRANSPARENT_PEN );
+	screenDC.SetPen( *wxWHITE_PEN );
+	screenDC.SetTextForeground(m_fgColour);
+	wxBrush brush( GetBackgroundColour() );
+	screenDC.SetBrush( brush );
+	screenDC.DrawRectangle(0,0,sizeX,sizeY);
 
 	if (fit) {
 		Fit(m_minX, m_maxX, m_minY, m_maxY, &sizeX, &sizeY);
@@ -2225,18 +2343,31 @@ bool mpWindow::SaveScreenshot(const wxString& filename, int type, wxSize imageSi
 	}
     // Draw all the layers:
     wxLayerList::iterator li;
-    for (li = m_layers.begin(); li != m_layers.end(); li++)
+    for (li = m_layers.begin(); li != m_layers.end(); li++) {
     	(*li)->Plot(screenDC, *this);
+			// DEBUG
+// 			wxString layerTypeName;
+// 			if ((*li)->GetLayerType() == mpLAYER_PLOT) {
+// 				layerTypeName = wxT("Plot");
+// 			} else if ((*li)->GetLayerType() == mpLAYER_AXIS) {
+// 				layerTypeName = wxT("Axis");
+// 			} else if ((*li)->GetLayerType() == mpLAYER_INFO) {
+// 				layerTypeName = wxT("Info");
+// 			}	else {
+// 				layerTypeName = wxT("Undefined");
+// 			}
+// 			wxLogMessage(_("Layer %s (%s): color %s"), (*li)->GetName(), layerTypeName.c_str(), (*li)->GetPen().GetColour().GetAsString().c_str());
+		}
 
-	if (imageSize != wxDefaultSize) {
-		// Restore dimensions
-		SetScr(bk_scrX, bk_scrY);
-                Fit(m_desiredXmin, m_desiredXmax, m_desiredYmin, m_desiredYmax, &bk_scrX, &bk_scrY);
-		UpdateAll();
-	}
+		if (imageSize != wxDefaultSize) {
+			// Restore dimensions
+			SetScr(bk_scrX, bk_scrY);
+			Fit(m_desiredXmin, m_desiredXmax, m_desiredYmin, m_desiredYmax, &bk_scrX, &bk_scrY);
+			UpdateAll();
+		}
     // Once drawing is complete, actually save screen shot
     wxImage screenImage = screenBuffer.ConvertToImage();
-    return screenImage.SaveFile(filename, type);
+    return screenImage.SaveFile(filename, (wxBitmapType) type);
 }
 
 void mpWindow::SetMargins(int top, int right, int bottom, int left)
@@ -2607,7 +2738,7 @@ void mpMovableObject::ShapeUpdated()
     // Just in case...
     if (m_shape_xs.size()!=m_shape_ys.size())
     {
-        ::wxLogError(wxT("[mpMovableObject::ShapeUpdated] Error, m_shape_xs and m_shape_ys have different lengths!"));
+        wxLogError(wxT("[mpMovableObject::ShapeUpdated] Error, m_shape_xs and m_shape_ys have different lengths!"));
     }
     else
     {
@@ -2746,9 +2877,9 @@ void mpCovarianceEllipse::RecalculateShape()
     m_shape_ys.clear();
 
     // Preliminar checks:
-    if (m_quantiles<0)  { ::wxLogError(wxT("[mpCovarianceEllipse] Error: quantiles must be non-negative")); return; }
-    if (m_cov_00<0)     { ::wxLogError(wxT("[mpCovarianceEllipse] Error: cov(0,0) must be non-negative")); return; }
-    if (m_cov_11<0)     { ::wxLogError(wxT("[mpCovarianceEllipse] Error: cov(1,1) must be non-negative")); return; }
+    if (m_quantiles<0)  { wxLogError(wxT("[mpCovarianceEllipse] Error: quantiles must be non-negative")); return; }
+    if (m_cov_00<0)     { wxLogError(wxT("[mpCovarianceEllipse] Error: cov(0,0) must be non-negative")); return; }
+    if (m_cov_11<0)     { wxLogError(wxT("[mpCovarianceEllipse] Error: cov(1,1) must be non-negative")); return; }
 
     m_shape_xs.resize( m_segments,0 );
     m_shape_ys.resize( m_segments,0 );
@@ -2760,7 +2891,7 @@ void mpCovarianceEllipse::RecalculateShape()
 
     double D = b*b - 4*c;
 
-    if (D<0)     { ::wxLogError(wxT("[mpCovarianceEllipse] Error: cov is not positive definite")); return; }
+    if (D<0)     { wxLogError(wxT("[mpCovarianceEllipse] Error: cov is not positive definite")); return; }
 
     double eigenVal0 =0.5*( -b + sqrt(D) );
     double eigenVal1 =0.5*( -b - sqrt(D) );
@@ -2844,7 +2975,7 @@ void mpPolygon::setPoints(
 {
     if ( points_xs.size()!=points_ys.size() )
     {
-        ::wxLogError(wxT("[mpPolygon] Error: points_xs and points_ys must have the same number of elements"));
+        wxLogError(wxT("[mpPolygon] Error: points_xs and points_ys must have the same number of elements"));
     }
     else
     {
@@ -2874,7 +3005,7 @@ void mpBitmapLayer::SetBitmap( const wxImage &inBmp, double x, double y, double 
 {
     if (!inBmp.Ok())
     {
-        ::wxLogError(wxT("[mpBitmapLayer] Assigned bitmap is not Ok()!"));
+        wxLogError(wxT("[mpBitmapLayer] Assigned bitmap is not Ok()!"));
     }
     else
     {
