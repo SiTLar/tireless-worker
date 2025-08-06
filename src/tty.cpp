@@ -5,7 +5,8 @@ extern "C"{
 #include <stdio.h>
 #include <termios.h>
 #include <string.h>
-#include <libexplain/tcgetattr.h>
+/*#include <libexplain/tcgetattr.h>
+ */
 #include <sys/ioctl.h>
 }
 

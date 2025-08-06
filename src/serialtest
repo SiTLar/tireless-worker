@@ -1,0 +1,6 @@
+devid= DevConnect("SERIAL", "ttyUSB0::9600::8N1::NONE");
+
+do forever
+call devRead devid
+call sleep 1
+end

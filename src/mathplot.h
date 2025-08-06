@@ -118,6 +118,7 @@ class WXDLLIMPEXP_MATHPLOT mpPrintout;
 enum
 {
     mpID_FIT = 2000,    //!< Fit view to match bounding box of all layers
+    mpID_SET_LIMITS,
     mpID_ZOOM_IN,       //!< Zoom into view at clickposition / window center
     mpID_ZOOM_OUT,      //!< Zoom out
     mpID_CENTER,        //!< Center view on click position

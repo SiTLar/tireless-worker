@@ -15,7 +15,7 @@ EXTRAINC = ../include
 
 ifdef DEBUG
 WXDBG = yes
-CCDBG = -g
+CCDBG = -g -O0
 LIB_SUF = d
 DIR_SUF = _d
 DEBUG_CFG = _debug
@@ -25,7 +25,7 @@ else
 DIR_SUF = 
 LIB_SUF =
 WXDBG = no
-CCDBG = -O0 -g
+CCDBG = -O3
 DBG_LIBS =
 WXCONFIG = wx-config --version=$(WX_VERSION) --debug=no
 endif
@@ -68,8 +68,11 @@ CC =  $(shell $(WXCONFIG) --cc ) $(CCDBG) -fPIC
 CXX =  $(shell $(WXCONFIG) --cxx  ) $(CCDBG) -ansi -Wall -fPIC
 CXXFLAGS = $(shell $(WXCONFIG) --cxxflags)  -std=gnu++11 -fPIC -I$(dsrcdir)/include -I../$(dsrcdir) -I$(dsrcdir)  -I$(EXTRAINC)
 #CXXFLAGS = $(shell $(WXCONFIG) --cxxflags)  -std=gnu++11 -Wfatal-errors -fPIC -I$(dsrcdir)/include -I../$(dsrcdir) -I$(dsrcdir)  -I$(EXTRAINC)
-LIBS = $(shell $(WXCONFIG) --libs) -L$(EXTRALIB)  -lexplain -pie -lwx_gtk2u_propgrid-$(WX_VERSION) -L../wxflatnotebook/contrib/lib
+#LIBS = $(shell $(WXCONFIG) --libs) -L$(EXTRALIB)  -lexplain -pie -lwx_gtk2u_propgrid-$(WX_VERSION) -L../wxflatnotebook/contrib/lib
+LIBS = $(shell $(WXCONFIG) --libs std propgrid) -L$(EXTRALIB)  $(DBG_LIBS) -pie -lregina -L../wxflatnotebook/contrib/lib -lwxflatnotebooku$(LIB_SUF) 
 
+
+#-lwx_gtk2u_propgrid-$(WX_VERSION) 
 ### Conditionally set variables: ###
 
 
@@ -83,8 +86,6 @@ clean:
 	-rm $(O_LIB)/*
 $(OBJS)/tireless_worker: $(MAIN_OBJECTS)
 	$(CXX) $(MAIN_OBJECTS) $(LIBS) -lwxflatnotebooku$(WX_VERSION)$(LIB_SUF) -lregina $(DBG_LIBS) -o $@ 
-#	$(CXX) $(MAIN_OBJECTS) $(LIBS) -lwxflatnotebooku$(LIB_SUF) -lwxcode_gtk2u$(LIB_SUF)_propgrid-2.8 -lregina $(DBG_LIBS) -o $@ 
-#	$(CXX) $(MAIN_OBJECTS) $(LIBS) -lwxflatnotebooku$(LIB_SUF) -lwxcode_gtk2ud_propgrid-2.8 -lregina $(DBG_LIBS) -o $@ 
 $(OBJS)/logplot: $(LOGPLOTPR_OBJECTS)
 	$(CXX) $(LOGPLOTPR_OBJECTS) $(LIBS)  -o $@ 
 $(O_LIB)/generic.so: $(GENERICDLL_OBJECTS) 

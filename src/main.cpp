@@ -288,16 +288,20 @@ void MyFrame::onNewTool( wxCommandEvent& ){
 	wxFileName fnTask(sPath);
 	wxBitmap * bmp = new wxBitmap(dlg.getBitmap());
 	wxBitmapBundle BB(*bmp);
-	//m_toolBar1->InsertTool( ulPos, strIntConf.ulIDTools +ulPos,sLable , bmp, wxNullBitmap,wxITEM_NORMAL,sLable, sPath, NULL);
-	m_toolBar1->AddTool( strIntConf.ulIDTools + m_toolBar1->GetToolsCount(), fnTask.GetFullName(), BB/*dlg.getBitmap()*/,wxNullBitmap, wxITEM_NORMAL,fnTask.GetFullName(), sPath/*description*/,new wxVariant(dlg.sImagePath));
-	//m_toolBar1->SetToolClientData(strIntConf.ulIDTools + m_toolBar1->GetToolsCount()-1, new wxVariant(dlg.sImagePath));
+    m_toolBar1->AddTool( strIntConf.ulIDTools + m_toolBar1->GetToolsCount(),
+            fnTask.GetFullName(), /*label*/
+            BB/*dlg.getBitmap()*/,/*bitmap*/
+            BB/*dlg.getBitmap()*/,/*bitmap disapled*/
+            wxITEM_NORMAL, /*kind*/
+            fnTask.GetFullName(),/*shortHelp*/
+            sPath,/*longHelp*/
+            new wxVariant(dlg.sImagePath));
 	m_toolBar1->Realize();
 	if(m_toolBar1->GetToolsCount() == strIntConf.ulMaxTools)  GetMenuBar()->Enable(ID_MENUADDTOOL, false);
 } 
 
 void MyFrame::onToolClick (wxMenuEvent& evt){
 	unsigned long TID;
-	//startTask( m_toolBar1->GetToolShortHelp(evt.GetId()), TID);
 	startTask( m_toolBar1->GetToolLongHelp(evt.GetId()), TID);
 }
 

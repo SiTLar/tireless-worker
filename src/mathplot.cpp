@@ -2367,7 +2367,7 @@ bool mpWindow::SaveScreenshot(const wxString& filename, int type, wxSize imageSi
 		}
     // Once drawing is complete, actually save screen shot
     wxImage screenImage = screenBuffer.ConvertToImage();
-    return screenImage.SaveFile(filename, (wxBitmapType) type);
+    return screenImage.SaveFile(filename, static_cast<wxBitmapType>(type));
 }
 
 void mpWindow::SetMargins(int top, int right, int bottom, int left)
@@ -2550,7 +2550,7 @@ void mpFXYVector::SetData( const std::vector<double> &xs,const std::vector<doubl
 {
 	// Check if the data vectora are of the same size
 	if (xs.size() != ys.size()) {
-		wxLogError(_("wxMathPlot error: X and Y vector are not of the same length!"));
+		//wxLogError(_("wxMathPlot error: X and Y vector are not of the same length!"));
 		return;
 	}
     // Copy the data:
