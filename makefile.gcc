@@ -69,7 +69,7 @@ CXX =  $(shell $(WXCONFIG) --cxx  ) $(CCDBG) -ansi -Wall -fPIC
 CXXFLAGS = $(shell $(WXCONFIG) --cxxflags)  -std=gnu++11 -fPIC -I$(dsrcdir)/include -I../$(dsrcdir) -I$(dsrcdir)  -I$(EXTRAINC)
 #CXXFLAGS = $(shell $(WXCONFIG) --cxxflags)  -std=gnu++11 -Wfatal-errors -fPIC -I$(dsrcdir)/include -I../$(dsrcdir) -I$(dsrcdir)  -I$(EXTRAINC)
 #LIBS = $(shell $(WXCONFIG) --libs) -L$(EXTRALIB)  -lexplain -pie -lwx_gtk2u_propgrid-$(WX_VERSION) -L../wxflatnotebook/contrib/lib
-LIBS = $(shell $(WXCONFIG) --libs std propgrid) -L$(EXTRALIB)  $(DBG_LIBS) -pie -lregina -L../wxflatnotebook/contrib/lib -lwxflatnotebooku$(LIB_SUF) 
+LIBS = $(shell $(WXCONFIG) --libs std propgrid) -L$(EXTRALIB)  $(DBG_LIBS) -pie -lregina -L../wxflatnotebook/contrib/lib
 
 
 #-lwx_gtk2u_propgrid-$(WX_VERSION) 
@@ -85,7 +85,7 @@ clean:
 	-rm $(OBJS)/*
 	-rm $(O_LIB)/*
 $(OBJS)/tireless_worker: $(MAIN_OBJECTS)
-	$(CXX) $(MAIN_OBJECTS) $(LIBS) -lwxflatnotebooku$(WX_VERSION)$(LIB_SUF) -lregina $(DBG_LIBS) -o $@ 
+	$(CXX) $(MAIN_OBJECTS) -lwxflatnotebooku$(WX_VERSION)$(LIB_SUF) $(LIBS)  -lregina $(DBG_LIBS) -o $@ 
 $(OBJS)/logplot: $(LOGPLOTPR_OBJECTS)
 	$(CXX) $(LOGPLOTPR_OBJECTS) $(LIBS)  -o $@ 
 $(O_LIB)/generic.so: $(GENERICDLL_OBJECTS) 

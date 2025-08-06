@@ -61,12 +61,8 @@ dlgLimInputbase::dlgLimInputbase( wxWindow* parent, wxWindowID id, const wxStrin
 	m_sdbSizer3->AddButton( m_sdbSizer3Cancel );
 	m_sdbSizer3->Realize();
 
-<<<<<<< HEAD
 	//bSizer1->Add( m_sdbSizer3, 0, wxEXPAND|wxALIGN_RIGHT, 10 );
 	bSizer1->Add( m_sdbSizer3, 0, wxEXPAND, 10 );
-=======
-	bSizer1->Add( m_sdbSizer3, 0, wxEXPAND|wxALIGN_RIGHT, 10 );
->>>>>>> origin/master
 
 
 	this->SetSizer( bSizer1 );
