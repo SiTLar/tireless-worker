@@ -83,7 +83,7 @@ elMFrame::elMFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer( wxVERTICAL );
 	
-	m_listCtrl1 = new myGoodListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_HRULES|wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_VRULES );
+	m_listCtrl1 = new myGoodListCtrl( this, wxID_ANY, wxDefaultPosition, wxSize(80,-1));//, wxLC_HRULES|wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_VRULES );
 	bSizer7->Add( m_listCtrl1, 1, wxALL|wxEXPAND, 5 );
 	
 	wxBoxSizer* bSizer8;
@@ -100,7 +100,7 @@ elMFrame::elMFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	
 	bSizer7->Add( bSizer8, 0, wxEXPAND, 5 );
 	
-	bSizer6->Add( bSizer7, 1, wxEXPAND, 5 );
+	bSizer6->Add( bSizer7, 1, wxALL|wxEXPAND, 5 );
 	
 	m_textCtrl1 = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH|wxTE_RICH2 );
 	bSizer6->Add( m_textCtrl1, 2, wxALL|wxEXPAND, 5 );

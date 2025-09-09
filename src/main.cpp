@@ -378,7 +378,7 @@ void MyFrame::onNewTask(wxCommandEvent& evt){
 	WriteText(wxString::Format(wxT("has started a new task (TID#%ld)\n"), TID), wxTextAttr(*wxBLUE));
 }
 
-void MyFrame::onListSized(wxSizeEvent &  WXUNUSED(event) ){m_listCtrl1->onSized();}
+//void MyFrame::onListSized(wxSizeEvent &  WXUNUSED(event) ){m_listCtrl1->onSized();}
 void MyFrame::evhTerminateThread( wxCommandEvent& WXUNUSED(event) ) {
 	m_checkBox1->SetValue(false);
 	m_button1->Enable( false );

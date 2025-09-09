@@ -90,7 +90,7 @@ DECLARE_APP(MyApp)
 		void onThreadMsg(wxCommandEvent& );
 		void onNewFrame(wxCommandEvent& );
 		void onNewTask(wxCommandEvent& );
-		virtual void onListSized( wxSizeEvent & );
+		//virtual void onListSized( wxSizeEvent & );
 		virtual void onSureTerminate(wxCommandEvent &);
 		void onDynTask(wxMenuEvent &);
 		virtual void onNewTool( wxCommandEvent& ) ;

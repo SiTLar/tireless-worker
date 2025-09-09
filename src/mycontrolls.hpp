@@ -11,53 +11,12 @@ class myGoodListCtrl: public wxListCtrl{
 	int iSelected;
 	double dColAR;
 	public:
-		myGoodListCtrl(wxWindow* parent, wxWindowID id, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxLC_ICON, const wxValidator& validator = wxDefaultValidator, const wxString& name = wxListCtrlNameStr):
-			wxListCtrl(parent, id, pos, size, style, validator, name ){
-				iLast = 0;
-				dColAR = 1;
-				wxListItem col0;
-				wxListItem col1;
-				col0.SetId(1);
-				col0.SetText( wxT("Name") );
-				InsertColumn(1, col0);
+		myGoodListCtrl(wxWindow* parent, wxWindowID id, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(80,-1), long style = wxLC_REPORT, const wxValidator& validator = wxDefaultValidator, const wxString& name = wxListCtrlNameStr);
+		void DeleteI(unsigned long item);
+	//	void onSized();	
+		long GetSelected();
 
-				col1.SetId(0);
-				col1.SetText( wxT("TID") );
-				InsertColumn(0, col1);
-				int w = (this->GetSize()).GetWidth();
-				SetColumnWidth(0, w/2*.9);
-				SetColumnWidth(1, w/2*.9);
-			};
-
-		void DeleteI(unsigned long item){
-			DeleteItem(item);
-			iLast--;
-			
-		}
-		void onSized();	
-		long GetSelected(){
-			long item = -1;
-			item = GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-			return item;
-		};
-
-		void AddItem(const wxString& sName, unsigned long pThr, int pos = -1 ){
-			int idx = pos; 
-			if ((idx < 1) || (idx > iLast) ) idx = InsertItem(iLast, sName );
-			else InsertItem(iLast, sName );
-			
-			SetItem(idx, 1, sName);
-			SetItem(idx, 0, wxString::Format(wxT("%ld"),pThr) );
-			//SetItemPtrData(idx, reinterpret_cast<wxUIntPtr>(pThr));
-			SetItemPtrData(idx, pThr);
-			/*wxListItem info;
-			info.SetId(idx);
-			GetItem(info);*/
-			SetColumnWidth(1, -1);
-			dColAR = GetColumnWidth(1)/64;
-			onSized();
-			++iLast;
-		}
+		void AddItem(const wxString& , unsigned long pThr, int pos);
 
 };
 
