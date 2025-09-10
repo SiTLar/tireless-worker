@@ -31,7 +31,7 @@ long myGoodListCtrl::GetSelected(){
 	return item;
 };
 
-void myGoodListCtrl::AddItem(const wxString& sName, unsigned long pThr, int pos = -1 ){
+void myGoodListCtrl::AddItem(const wxString& sName, unsigned long pThr, int pos ){
 	int idx = pos; 
 	if ((idx < 1) || (idx > iLast) ) idx = InsertItem(iLast, sName );
 	else InsertItem(iLast, sName );

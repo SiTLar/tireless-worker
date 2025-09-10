@@ -16,7 +16,7 @@ class myGoodListCtrl: public wxListCtrl{
 	//	void onSized();	
 		long GetSelected();
 
-		void AddItem(const wxString& , unsigned long pThr, int pos);
+		void AddItem(const wxString& , unsigned long pThr, int pos = -1);
 
 };
 
