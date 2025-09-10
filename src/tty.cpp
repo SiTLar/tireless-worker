@@ -143,7 +143,7 @@ bool DevTTY::read(std::string*str, std::string*err,int count) {
 	
 	//	if(iReadCount >= iTermLen )if (!memcmp(pcTerm, buf + iReadCount - iTermLen, iTermLen))break;
 	//fprintf(stderr, "iReadCount=%d, count=%d\n", iReadCount, count );
-	for(int idx = 0;idx< iReadCount; idx++) fprintf(stderr, "%02x|",buf[idx]);
+	//for(int idx = 0;idx< iReadCount; idx++) fprintf(stderr, "%02x|",buf[idx]);
 	if (re < 0) *err = std::string(strerror(errno));
 	*str = std::string(buf, iReadCount);
 	/*

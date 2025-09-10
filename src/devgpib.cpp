@@ -36,7 +36,7 @@ bool DevGPIB::connect(const std::string& strInit) {
 	int ibsta_val;
 	long rc;
 	do{
-		rc = std::sscanf(strInit.c_str(), "%d::%d::%d::%d::%d::%d", &boardno,  &pad,  &sad,  &timeout,  &eot,  &eos);
+		rc = std::sscanf(strInit.c_str(), "GPIB%d::%d::%d::%d::%d::%d", &boardno,  &pad,  &sad,  &timeout,  &eot,  &eos);
 		if (rc == EOF) break;
 		handle = ibdev( boardno,  pad,  sad,  timeout,  eot,  eos);
 		ibsta_val = ThreadIbsta();
