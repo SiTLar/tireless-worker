@@ -146,6 +146,7 @@ inline bool HandlerBroker::makeRead(MyThread * TID, DevDesc*pDev,  std::string* 
 	int count = iToRead = iToRead<1024?iToRead:1024;
 
 	std::string strError;
+	std::string term = pDev->getTerm();
 	wxStopWatch sw;
 	do{
 		strError.clear();
@@ -156,12 +157,12 @@ inline bool HandlerBroker::makeRead(MyThread * TID, DevDesc*pDev,  std::string* 
 		}
 		*pstr += strTmp;
 		iRed = pstr->length();
+        strTmp.clear();
 		iToRead -= iRed;
 		/*if ((pstr->find(pDev->getTerm()) != std::string::npos)
 		||	sw.Time() > pDev->readTimeout()) break;
 		*/
-		std::string term = pDev->getTerm();
-		if ((pstr->find(pDev->getTerm()) != std::string::npos)) break;
+		if ((pstr->find(term) != std::string::npos)) break;
 		if(sw.Time() > pDev->readTimeout()) break;
 		if (TID->TestDestroy()) return false;
 		TID->Sleep(100);	

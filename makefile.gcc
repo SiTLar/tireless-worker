@@ -48,6 +48,9 @@ NI_OBJECTS = \
 	$(OBJS)/ni_visa.o \
 	$(OBJS)/devvisa.o 
 
+RELAY_OBJECTS =\
+	$(OBJS)/devrelay.o
+
 
 GENERICDLL_OBJECTS = \
 	$(OBJS)/devices_linux.o \
@@ -78,8 +81,8 @@ LIBS = $(shell $(WXCONFIG) --libs std propgrid) -L$(EXTRALIB)  $(DBG_LIBS) -pie 
 
 ### Targets: ###
 
-#all: $(OBJS)/tireless_worker $(O_LIB)/generic.so $(OBJS)/logplot 
-all: $(OBJS)/tireless_worker $(O_LIB)/generic.so $(O_LIB)/ni.so $(OBJS)/logplot
+all: $(OBJS)/tireless_worker $(O_LIB)/generic.so $(OBJS)/logplot 
+#all: $(OBJS)/tireless_worker $(O_LIB)/generic.so $(O_LIB)/ni.so $(OBJS)/logplot
 
 clean: 
 	-rm $(OBJS)/*
@@ -89,11 +92,13 @@ $(OBJS)/tireless_worker: $(MAIN_OBJECTS)
 $(OBJS)/logplot: $(LOGPLOTPR_OBJECTS)
 	$(CXX) $(LOGPLOTPR_OBJECTS) $(LIBS)  -o $@ 
 $(O_LIB)/generic.so: $(GENERICDLL_OBJECTS) 
-	$(CXX) -lexplain $(GENERICDLL_OBJECTS) -lgpib -o $@ --shared $(DBG_LIBS) 
+	$(CXX) $(GENERICDLL_OBJECTS) -lgpib -o $@ --shared $(DBG_LIBS) 
 
 
 $(O_LIB)/ni.so: $(NI_OBJECTS) 
 	$(CXX) -o $@ $(NI_OBJECTS) -lvisa --shared
+$(O_LIB)/relay.so: $(RELAY_OBJECTS) 
+	$(CXX) -o $@ $(RELAY_OBJECTS) -lusbrelay --shared
 
 $(OBJS)/rxpack.o: $(dsrcdir)/rxpack.c
 	`$(WXCONFIG) --cc --cxxflags` -fPIC -c -o $@  -I$(dsrcdir) $<  -D__EMX__ -D__OS2__

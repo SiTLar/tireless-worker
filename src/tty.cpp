@@ -73,7 +73,7 @@ bool DevTTY::connect(const std::string& strInit) {
 		lMode &= ~(CRTSCTS);
 	if (!reOptions.GetMatch(sInit, 4).IsEmpty()){
 		wxString sMode(reOptions.GetMatch(sInit, 4));
-		fprintf(stderr,"HW/SW:%s", sMode.utf8_str().data() );
+		//fprintf(stderr,"HW/SW:%s", sMode.utf8_str().data() );
 		lMode &= ~(CRTSCTS);
 		t.c_iflag &=  ~(IXON | IXOFF | IXANY);
 		if(!sMode.CmpNoCase(wxT("hw")))
